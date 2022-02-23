@@ -3,18 +3,30 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-scripts": "5.0.0",
+    "typescript": "^4.5.5",
+    "web-vitals": "^2.1.4",
+    "@emotion/react": "^11.8.1",
+    "@emotion/styled": "^11.8.1",
+    "@petamoriken/float16": "^3.6.2",
+    "plotly.js-gl2d-dist-min": "^2.9.0",
+    "react-plotly.js": "^2.5.1",
+    "stream": "^0.0.2"
+  },
+  "devDependencies": {
+    "@types/plotly.js-dist-min": "^2.3.0",
+    "@types/react-plotly.js": "^2.5.0",
+    "gh-pages": "^3.2.3",
+    "prettier": "^2.5.1",
     "@testing-library/jest-dom": "^5.16.2",
     "@testing-library/react": "^12.1.3",
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.4.0",
     "@types/node": "^16.11.25",
     "@types/react": "^17.0.39",
-    "@types/react-dom": "^17.0.11",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "5.0.0",
-    "typescript": "^4.5.5",
-    "web-vitals": "^2.1.4"
+    "@types/react-dom": "^17.0.11"
   },
   "scripts": {
     "predeploy": "npm run build",

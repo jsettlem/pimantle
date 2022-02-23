@@ -1,16 +1,16 @@
 import { Word } from "./App";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 function GuessEntry({ guess }: { guess: Word }) {
   function getFlavorText(rank: number): string {
     if (rank === 0) {
-      return "FLAMEO HOTMAN!";
+      return "FLAMEO, HOTMAN!";
     } else if (rank < 10) {
       return "🔥🔥🔥";
     } else if (rank < 50) {
-      return "🔥🔥!";
+      return "🔥🔥";
     } else if (rank < 100) {
-      return "🔥!!";
+      return "🔥";
     } else if (rank < 200) {
       return "HOT";
     } else if (rank < 500) {
@@ -61,11 +61,11 @@ function GuessEntry({ guess }: { guess: Word }) {
     >
       <div className="guess-index">{guess.guessIndex}</div>
       <div className="guess-word">{guess.word}</div>
-      <div className="guess-similarity">{guess.similarity.toFixed(3)}</div>
+      <div className="guess-similarity">{guess.similarity.toFixed(2)}</div>
       <div
         className={guess.rank < 1000 ? "guess-rank" : "guess-rank-placeholder"}
       >
-        {guess.rank < 1000 ? "#" + guess.rank : "--"}
+        {guess.rank !== 0 && (guess.rank < 1000 ? "#" + guess.rank : "--")}
       </div>
       <div className="guess-flavor">{getFlavorText(guess.rank)}</div>
     </div>

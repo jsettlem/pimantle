@@ -1,3 +1,15 @@
+:root {
+	--panel-color: rgba(14, 26, 33, 0.5);
+	--min-opacity: 0.0;
+	--body-font: 'Space Grotesk', 'Roboto', sans-serif;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+	:root {
+		--min-opacity: 0.75;
+	}
+}
+
 .App {
 	width: 100%;
 	height: 100%;
@@ -7,9 +19,35 @@
 
 .header {
 	flex-basis: auto;
-	background-color: #0e1a21;
 	text-align: center;
-	font-size: 2rem;
+	font-size: 24px;
+	height: 26px;
+}
+
+.header, .footer {
+	z-index: 99;
+	flex-basis: auto;
+	background-color: #0e1a21;
+	padding: 0.5rem;
+	background-color: var(--panel-color);
+	backdrop-filter: blur(10px);
+}
+
+.loading-container {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.loading-text {
+	font-size: 3rem;
+	color: #fff;
 }
 
 .game-container {
@@ -17,13 +55,21 @@
 	position: relative;
 }
 
-.footer {
-	flex-basis: auto;
-	background-color: #0e1a21;
+
+a {
+	color: rgb(222, 234, 248);
 }
 
-.bg-plot-container, .layout-container {
+.layout-container {
 	position: absolute !important;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	top: 0;
+}
+
+.bg-plot-container {
+	position: fixed !important;
 	bottom: 0;
 	left: 0;
 	right: 0;
@@ -37,6 +83,18 @@
 .plot {
 	width: 100%;
 	height: 100%;
+}
+
+.gl-canvas {
+	z-index: -1;
+	transform-origin: var(--plot-center-x) var(--plot-center-y);
+}
+
+.js-plotly-plot .plotly .modebar {
+	left: 50%;
+	transform: translateX(-50%);
+	right: auto !important;
+	top: 44px !important;
 }
 
 .layout-container {
@@ -64,8 +122,9 @@
 }
 
 
-.guess-input, .guess-submit {
+.guess-input, input[type=button], input[type=submit] {
 	margin-right: 0.5rem;
+	margin-bottom: 0.5rem;
 	font-size: 1.5rem;
 	background-color: rgba(14, 26, 33, 0.77);
 	color: #ececec;
@@ -74,11 +133,11 @@
 	border-width: 0.1rem;
 	border-radius: 0.5rem;
 	padding: 0.2rem;
-	font-family: 'Space Grotesk', 'Roboto', sans-serif;
+	font-family: var(--body-font);
 	backdrop-filter: blur(3px);
 }
 
-.guess-submit {
+input[type=button], input[type=submit] {
 	height: 3rem;
 }
 
@@ -106,50 +165,66 @@
 	padding: 1rem;
 	border-radius: 0.5rem;
 	backdrop-filter: blur(10px);
+	--outline-color: rgba(0, 0, 0, 0.5);
+	--outline-offset: 0.1rem;
+	--outline-blur: 0.5rem;
+	text-shadow: calc(-1 * var(--outline-offset)) calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
+	0 calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
+	var(--outline-offset) calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
+	var(--outline-offset) 0 var(--outline-blur) var(--outline-color),
+	var(--outline-offset) var(--outline-offset) var(--outline-blur) var(--outline-color),
+	0 var(--outline-offset) var(--outline-blur) var(--outline-color),
+	calc(-1 * var(--outline-offset)) var(--outline-offset) var(--outline-blur) var(--outline-color),
+	calc(-1 * var(--outline-offset)) 0 var(--outline-blur) var(--outline-color);
+	color: white;
 }
 
 .bg-correct {
-	background-color: rgba(26, 255, 199, 0.98);
+	background-color: rgba(26, 255, 199, calc(max(0.9, var(--min-opacity))));
 	color: black;
+	--outline-color: rgba(255, 255, 255, 0.5);
+	--outline-radius: 0;
 }
 
 .bg-very-hot {
-	background-color: rgba(252, 255, 178, 0.98);
+	background-color: rgba(250, 252, 238, calc(max(0.8, var(--min-opacity))));
 	color: black;
+	--outline-color: rgba(255, 255, 255, 0.5);
 }
 
 .bg-quite-hot {
-	background-color: rgba(188, 236, 18, 0.94);
+	background-color: rgba(188, 236, 18, calc(max(0.7, var(--min-opacity))));
 	color: black;
+	--outline-color: rgba(255, 255, 255, 0.5);
 }
 
 .bg-hot {
-	background-color: rgba(250, 50, 4, 0.87);
+	background-color: rgba(250, 50, 4, calc(max(0.6, var(--min-opacity))));
 	color: white;
 }
 
 .bg-toasty {
-	background-color: rgba(196, 0, 0, 0.75);
+	background-color: rgba(196, 0, 0, calc(max(0.5, var(--min-opacity))));
 	color: white;
 }
 
 .bg-warm {
-	background-color: rgba(126, 0, 38, 0.54);
+	background-color: rgba(126, 0, 38, calc(max(0.4, var(--min-opacity))));
 	color: white;
 }
 
 .bg-tepid {
-	background-color: rgba(52, 0, 80, 0.43);
+	background-color: rgba(52, 0, 80, calc(max(0.3, var(--min-opacity))));
 	color: white;
 }
 
 .bg-cold {
-	background-color: rgba(5, 0, 59, 0.35);
+	background-color: rgba(5, 0, 59, calc(max(0.25, var(--min-opacity))));
 	color: white;
 }
 
 .bg-frigid {
-	background-color: rgba(0, 12, 30, 0.27);
+	background-color: rgba(0, 12, 30, calc(max(0.2, var(--min-opacity))));
 	color: white;
 }
 
@@ -188,6 +263,17 @@
 	border-radius: 1rem;
 	margin: 1rem;
 	flex-grow: 1;
+}
+
+hr {
+	margin-bottom: 0.5em;
+	opacity: 0.5;
+}
+
+.congrats-text {
+	padding: 0.25rem;
+	background-color: var(--panel-color);
+	border-radius: 0.25rem;
 }
 
 @media (max-aspect-ratio: 1/1) {

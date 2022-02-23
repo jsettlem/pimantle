@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
 
 * {
   margin: 0;
@@ -15,7 +15,7 @@ body {
   width: 100%;
 
   margin: 0;
-  font-family: 'Space Grotesk', 'Roboto', sans-serif;
+  font-family: var(--body-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
