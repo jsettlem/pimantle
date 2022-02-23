@@ -1,13 +1,27 @@
-:root {
+* {
 	--panel-color: rgba(14, 26, 33, 0.5);
 	--min-opacity: 0.0;
 	--body-font: 'Space Grotesk', 'Roboto', sans-serif;
+	--toastify-color-dark: var(--panel-color);
+	--toastify-color-error: rgba(255, 0, 0, 0.54);
+	--toastify-font-family: var(--body-font);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
 	:root {
 		--min-opacity: 0.75;
 	}
+}
+
+.toast-blur {
+	backdrop-filter: blur(10px);
+}
+
+#hidden-plot {
+	display:none;
+	position: fixed;
+	top: 200%;
+	left: 200%;
 }
 
 .App {
@@ -91,8 +105,7 @@ a {
 }
 
 .js-plotly-plot .plotly .modebar {
-	left: 50%;
-	transform: translateX(-50%);
+	left: 30px;
 	right: auto !important;
 	top: 44px !important;
 }
@@ -106,7 +119,7 @@ a {
 	align-content: stretch;
 }
 
-.guess-form *, .guess-list {
+.guess-form *, .guess-list, .solved-container {
 	pointer-events: all;
 }
 
