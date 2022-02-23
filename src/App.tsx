@@ -36,46 +36,45 @@ function App() {
 
   let [parsedWords, setParsedWords] = useState<Word[]>([]);
 
-  let [plotState, setPlotState] = useState<Figure>({
-    data: [],
-    layout: {
-      paper_bgcolor: "rgba(0,0,0,0)",
-      plot_bgcolor: "rgba(0,0,0,0)",
-      margin: {
-        l: 0,
-        r: 0,
-        b: 0,
-        t: 0,
-        pad: 500,
-      },
-      xaxis: {
-        autorange: false,
-        showgrid: false,
-        showticklabels: false,
-        zerolinecolor: "rgba(255,255,255,0.1)",
-        range: [-1, 1],
-      },
-      yaxis: {
-        autorange: false,
-        showgrid: false,
-        showticklabels: false,
-        // scaleanchor: "x",
-        constraintoward: "center",
-        zerolinecolor: "rgba(255,255,255,0.1)",
-        range: [-1, 1],
-      },
-      dragmode: "pan",
-      showlegend: false,
-      uirevision: 1,
-      transition: {
-        duration: 0,
-        easing: "linear",
-      },
+  let [plotData, setPlotData] = useState<Plotly.Data[]>([]);
+  let [plotLayout, setPlotLayout] = useState<Plotly.Layout>({
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    margin: {
+      l: 0,
+      r: 0,
+      b: 0,
+      t: 0,
+      pad: 500,
     },
-    frames: [],
+    xaxis: {
+      autorange: false,
+      showgrid: false,
+      showticklabels: false,
+      zerolinecolor: "rgba(255,255,255,0.1)",
+      range: [-1, 1],
+    },
+    yaxis: {
+      autorange: false,
+      showgrid: false,
+      showticklabels: false,
+      // scaleanchor: "x",
+      constraintoward: "center",
+      zerolinecolor: "rgba(255,255,255,0.1)",
+      range: [-1, 1],
+    },
+    dragmode: "pan",
+    showlegend: false,
+    uirevision: 1,
+    transition: {
+      duration: 0,
+      easing: "linear",
+    },
   });
 
   let [dataRevision, setDataRevision] = useState<number>(0);
+  let [bizarreEdgeCaseThingIHateIt, setBizarreEdgeCaseThingIHateIt] =
+    useState<number>(Math.random() / 10000 + 0.00001);
 
   function handleResize() {
     centerPlot();
@@ -133,67 +132,64 @@ function App() {
         setXValues(newXValues);
         let newYValues = parsedWords.map((word) => word.y);
         setYValues(newYValues);
-        setPlotState((prevState: Figure) => ({
-          ...prevState,
-          data: [
-            {
-              x: newXValues,
-              y: newYValues,
-              mode: "markers",
-              type: "scattergl",
-              marker: {
-                color: "darkblue",
-                opacity: 0.8,
-                // color: parsedWords.map((w) => Math.floor(w.rank / 100)),
-                // color: parsedWords.map(
-                //   (word) => word.rank / parsedWords.length
-                // ),
-              },
-              hoverinfo: "skip",
+        setPlotData([
+          {
+            x: newXValues,
+            y: newYValues,
+            mode: "markers",
+            type: "scattergl",
+            marker: {
+              color: "darkblue",
+              opacity: 0.8,
+              // color: parsedWords.map((w) => Math.floor(w.rank / 100)),
+              // color: parsedWords.map(
+              //   (word) => word.rank / parsedWords.length
+              // ),
             },
-            {
-              x: [parsedWords[0].x],
-              y: [parsedWords[0].y],
-              mode: "markers",
-              type: "scatter",
-              marker: {
-                color: "yellow",
-                size: 15,
-                symbol: "star",
-              },
-              hovertemplate: "<b>Secret word</b><extra></extra>",
-              hoverlabel: {
-                font: {
-                  family: "var(--body-font)",
-                },
+            hoverinfo: "skip",
+          },
+          {
+            x: [parsedWords[0].x],
+            y: [parsedWords[0].y],
+            mode: "markers",
+            type: "scatter",
+            marker: {
+              color: "yellow",
+              size: 15,
+              symbol: "star",
+            },
+            hovertemplate: "<b>Secret word</b><extra></extra>",
+            hoverlabel: {
+              font: {
+                family: "var(--body-font)",
               },
             },
-            {
-              x: [],
-              y: [],
-              customdata: [],
-              text: [],
-              mode: "markers",
-              type: "scatter",
-              marker: {
-                color: [],
-                cmin: 0,
-                cmid: 1000,
-                cmax: parsedWords.length,
-                size: 10,
-                colorscale: "Portland",
-                reversescale: true,
-              },
-              hoverlabel: {
-                font: {
-                  family: "var(--body-font)",
-                },
-              },
-              hovertemplate:
-                "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<br>Your guess: %{customdata[2]}<extra></extra>",
+          },
+          {
+            x: [],
+            y: [],
+            customdata: [],
+            text: [],
+            mode: "markers",
+            type: "scatter",
+            marker: {
+              color: [],
+              cmin: 0,
+              cmid: 1000,
+              cmax: parsedWords.length,
+              size: 10,
+              colorscale: "Portland",
+              reversescale: true,
             },
-          ],
-        }));
+            hoverlabel: {
+              font: {
+                family: "var(--body-font)",
+              },
+            },
+            hovertemplate:
+              "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<br>Your guess: %{customdata[2]}<extra></extra>",
+          },
+        ]);
         setParsedWords(parsedWords);
       });
   }, []);
@@ -218,8 +214,7 @@ function App() {
 
   useEffect(() => {
     setDataRevision((old) => old + 1);
-    console.log(plotState);
-  }, [plotState]);
+  }, [plotData]);
 
   function checkGuess(guess: string): Word | undefined {
     return parsedWords.find((word) => word.word === guess);
@@ -244,45 +239,25 @@ function App() {
           return [...old, newGuessObject].sort((a, b) => b.rank - a.rank);
         });
 
-        let [xRange, yRange] = getAxisRange(newGuessObject);
-
-        setPlotState((prevState: any) => ({
-          ...prevState,
-          layout: {
-            ...prevState.layout,
-            xaxis: {
-              ...prevState.layout.xaxis,
-              range: xRange,
+        setPlotData((prevState) => [
+          prevState[0],
+          prevState[1],
+          {
+            ...prevState[2],
+            x: [...prevState[2].x, result!.x],
+            y: [...prevState[2].y, result!.y],
+            customdata: [
+              ...prevState[2].customdata,
+              [result!.similarity.toFixed(2), result!.rank, guesses.length + 1],
+            ],
+            text: [...prevState[2].text, result!.word],
+            marker: {
+              ...prevState[2].marker,
+              color: [...prevState[2].marker.color, result!.rank],
             },
-            yaxis: {
-              ...prevState.layout.yaxis,
-              range: yRange,
-            },
-            uirevision: prevState.layout.uirevision + 1,
           },
-          data: [
-            prevState.data[0],
-            prevState.data[1],
-            {
-              ...prevState.data[2],
-              x: [...prevState.data[2].x, result!.x],
-              y: [...prevState.data[2].y, result!.y],
-              customdata: [
-                ...prevState.data[2].customdata,
-                [
-                  result!.similarity.toFixed(2),
-                  result!.rank,
-                  guesses.length + 1,
-                ],
-              ],
-              text: [...prevState.data[2].text, result!.word],
-              marker: {
-                ...prevState.data[2].marker,
-                color: [...prevState.data[2].marker.color, result!.rank],
-              },
-            },
-          ],
-        }));
+        ]);
+        centerPlot(newGuessObject);
         if (newGuessObject.rank === 0) {
           setPuzzleSolved(true);
         }
@@ -353,25 +328,28 @@ function App() {
   }
 
   function centerPlot(on?: Word) {
+    setBizarreEdgeCaseThingIHateIt((old) => old * -1);
     if (parsedWords) {
       let [xRange, yRange] = getAxisRange(
         on ? on : parsedWords[Math.floor(parsedWords.length / 2)]
       );
 
-      setPlotState((prevState: any) => ({
+      xRange[0] += bizarreEdgeCaseThingIHateIt;
+      xRange[1] += bizarreEdgeCaseThingIHateIt;
+      yRange[0] += bizarreEdgeCaseThingIHateIt;
+      yRange[1] += bizarreEdgeCaseThingIHateIt;
+
+      setPlotLayout((prevState: Plotly.Layout) => ({
         ...prevState,
-        layout: {
-          ...prevState.layout,
-          xaxis: {
-            ...prevState.layout.xaxis,
-            range: xRange,
-          },
-          yaxis: {
-            ...prevState.layout.yaxis,
-            range: yRange,
-          },
-          uirevision: prevState.layout.uirevision + 1,
+        xaxis: {
+          ...prevState.xaxis,
+          range: xRange,
         },
+        yaxis: {
+          ...prevState.yaxis,
+          range: yRange,
+        },
+        uirevision: prevState.uirevision + 1,
       }));
     }
   }
@@ -436,8 +414,8 @@ function App() {
           </div>
 
           <PlotContainer
-            data={plotState.data}
-            layout={plotState.layout}
+            data={plotData}
+            layout={plotLayout}
             onInit={() => centerPlot()}
             hoverEnabled={hoverEnabled}
             revision={dataRevision}
