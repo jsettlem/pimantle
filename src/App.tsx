@@ -22,6 +22,12 @@ export type Word = {
   guessIndex?: number;
 };
 
+type SubmitGuessesParams = {
+  word: string;
+  isHint: boolean;
+  index?: number;
+};
+
 function App() {
   let [todaysPuzzle, setTodaysPuzzle] = useState<string>("?");
   let [secret, setSecret] = useState<Word>();
@@ -94,6 +100,22 @@ function App() {
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousedown", enableHover);
+    if (guesses.length == 0) {
+      let storedProgress = window.localStorage.getItem(
+        `pimantle-${todaysPuzzle}-progress`
+      );
+
+      console.log("stored progress", storedProgress);
+      if (storedProgress) {
+        let storedProgressList = JSON.parse(storedProgress).map(
+          (guess: any) => ({
+            word: guess.word,
+            index: guess.guessIndex,
+          })
+        );
+        submitGuesses(storedProgressList);
+      }
+    }
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousedown", enableHover);
@@ -138,6 +160,7 @@ function App() {
         setXValues(newXValues);
         let newYValues = parsedWords.map((word) => word.y);
         setYValues(newYValues);
+
         setPlotData([
           {
             x: newXValues,
@@ -201,6 +224,7 @@ function App() {
               "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<br>Your guess: %{customdata[2]}<extra></extra>",
           },
         ]);
+
         setParsedWords(parsedWords);
       });
   }, []);
@@ -231,69 +255,124 @@ function App() {
     return parsedWords.find((word) => word.word === guess);
   }
 
+  function saveGuesses(newGuessList: Word[]) {
+    let savedState = newGuessList.map((word) => ({
+      word: word.word,
+      guessIndex: word.guessIndex,
+    }));
+
+    savedState.sort((a, b) => (a.guessIndex || 0) - (b.guessIndex || 0));
+
+    window.localStorage.setItem(
+      `pimantle-${todaysPuzzle}-progress`,
+      JSON.stringify(savedState)
+    );
+  }
+
   function submitGuess(guess: FormEvent<HTMLFormElement>) {
     guess.preventDefault();
-    let newGuess = guess.currentTarget.guess.value.toLowerCase();
-    let result = checkGuess(newGuess);
-    if (result !== undefined) {
-      let previousGuess = guesses.find(
-        (oldGuess) => oldGuess.word === newGuess
-      );
-
-      if (!previousGuess) {
-        let newGuessObject = {
-          ...(result as Word),
-          guessIndex: guesses.length + 1,
-        };
-        setMostRecentGuess(newGuessObject);
-        setGuesses((old) => {
-          return [...old, newGuessObject].sort((a, b) => b.rank - a.rank);
-        });
-
-        setPlotData((prevState) => [
-          prevState[0],
-          prevState[1],
-          {
-            ...prevState[2],
-            x: [...prevState[2].x, result!.x],
-            y: [...prevState[2].y, result!.y],
-            customdata: [
-              ...prevState[2].customdata,
-              [result!.similarity.toFixed(2), result!.rank, guesses.length + 1],
-            ],
-            text: [...prevState[2].text, result!.word],
-            marker: {
-              ...prevState[2].marker,
-              color: [...prevState[2].marker.color, result!.rank],
-            },
-          },
-        ]);
-        centerPlot(newGuessObject);
-        if (newGuessObject.rank === 0) {
-          setPuzzleSolved(true);
-        }
-      } else {
-        setMostRecentGuess(previousGuess);
-        centerPlot(previousGuess);
-      }
-    } else {
-      toast.error(`I don't know the word "${newGuess}".`);
-      inputBox.current?.animate(
-        [
-          { transform: "translateX(0px)" },
-          { transform: "translateX(10px)" },
-          { transform: "translateX(-10px)" },
-          { transform: "translateX(10px)" },
-          { transform: "translateX(-10px)" },
-          { transform: "translateX(10px)" },
-          { transform: "translateX(0px)" },
-        ],
-        {
-          duration: 500,
-        }
-      );
-    }
+    let newGuess = guess.currentTarget.guess.value.toLowerCase().trim();
+    submitGuesses([{ word: newGuess, isHint: false }]);
     guess.currentTarget.guess.value = "";
+  }
+
+  function submitGuesses(guess: SubmitGuessesParams[]) {
+    let newGuessObjects: Word[] = guess
+      .map((guess) => {
+        let result = checkGuess(guess.word);
+        if (result === undefined) {
+          toast.error(`I don't know the word "${guess.word}".`);
+          inputBox.current?.animate(
+            [
+              { transform: "translateX(0px)" },
+              { transform: "translateX(10px)" },
+              { transform: "translateX(-10px)" },
+              { transform: "translateX(10px)" },
+              { transform: "translateX(-10px)" },
+              { transform: "translateX(10px)" },
+              { transform: "translateX(0px)" },
+            ],
+            {
+              duration: 500,
+            }
+          );
+        }
+        return (
+          result &&
+          ({
+            ...(result as Word),
+            guessIndex: guess.index,
+          } as Word)
+        );
+      })
+      .filter(
+        (result: Word | undefined): result is Word => result !== undefined
+      )
+      .map((guess: Word, index: number) => {
+        let previousGuess = guesses.find(
+          (oldGuess) => oldGuess.word === guess.word
+        );
+        if (previousGuess) {
+          setMostRecentGuess(previousGuess);
+          centerPlot(previousGuess);
+          return undefined;
+        } else {
+          return {
+            ...(guess as Word),
+            guessIndex: guess.guessIndex || guesses.length + index + 1,
+          } as Word;
+        }
+      })
+      .filter(
+        (result: Word | undefined): result is Word => result !== undefined
+      );
+
+    if (newGuessObjects.length > 0) {
+      setGuesses((old) => {
+        let newGuessList = [...old, ...newGuessObjects].sort(
+          (a, b) => b.rank - a.rank
+        );
+        saveGuesses(newGuessList);
+        return newGuessList;
+      });
+
+      let bestGuess = newGuessObjects[newGuessObjects.length - 1];
+      setMostRecentGuess(bestGuess);
+      centerPlot(bestGuess);
+
+      setPlotData((prevState) => [
+        prevState[0],
+        prevState[1],
+        {
+          ...prevState[2],
+          x: [...prevState[2].x, ...newGuessObjects.map((guess) => guess.x)],
+          y: [...prevState[2].y, ...newGuessObjects.map((guess) => guess.y)],
+          customdata: [
+            ...prevState[2].customdata,
+            ...newGuessObjects.map((guess) => [
+              guess.similarity.toFixed(2),
+              guess.rank,
+              guess.guessIndex,
+            ]),
+          ],
+          text: [
+            ...prevState[2].text,
+            ...newGuessObjects.map((guess) => guess.word),
+          ],
+          marker: {
+            ...prevState[2].marker,
+            color: [
+              ...prevState[2].marker.color,
+              ...newGuessObjects.map((guess) => guess.rank),
+            ],
+          },
+        },
+      ]);
+
+      if (newGuessObjects.some((guess) => guess.rank === 0)) {
+        setPuzzleSolved(true);
+      }
+    }
   }
 
   function getAxisRange(target: Word): number[][] {
@@ -389,33 +468,45 @@ function App() {
       toast(
         "Generating image, give me a sec... (this might not work great on some browsers)."
       );
-      return Plotly.newPlot("hidden-plot", [plotData[0]], {
-        ...defaultLayout,
-        plot_bgcolor: "rgba(0,0,0,255)",
-      })
-        .then((figure: any) =>
-          Plotly.toImage(figure, { format: "png", width: 1920, height: 1080 })
-        )
-        .then((bgLayer: string) =>
-          Plotly.react(
-            "hidden-plot",
-            [plotData[1], plotData[2]],
-            defaultLayout
-          ).then((newPlot: any) =>
-            Plotly.toImage(newPlot, {
-              format: "png",
-              width: 1920,
-              height: 1080,
-            }).then((foregroundLayer: string) => {
-              Plotly.purge("hidden-plot");
-              return mergeImages([bgLayer, foregroundLayer]).then((merged) => {
-                setSocialImage(merged);
-                setDownloadingImage(false);
-                return merged;
-              });
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(
+            Plotly.newPlot("hidden-plot", [plotData[0]], {
+              ...defaultLayout,
+              plot_bgcolor: "rgba(0,0,0,255)",
             })
-          )
-        );
+              .then((figure: any) =>
+                Plotly.toImage(figure, {
+                  format: "png",
+                  width: 1920,
+                  height: 1080,
+                })
+              )
+              .then((bgLayer: string) =>
+                Plotly.react(
+                  "hidden-plot",
+                  [plotData[1], plotData[2]],
+                  defaultLayout
+                ).then((newPlot: any) =>
+                  Plotly.toImage(newPlot, {
+                    format: "png",
+                    width: 1920,
+                    height: 1080,
+                  }).then((foregroundLayer: string) => {
+                    Plotly.purge("hidden-plot");
+                    return mergeImages([bgLayer, foregroundLayer]).then(
+                      (merged) => {
+                        setSocialImage(merged);
+                        setDownloadingImage(false);
+                        return merged;
+                      }
+                    );
+                  })
+                )
+              )
+          );
+        }, 100);
+      });
     }
   }
 
@@ -654,7 +745,11 @@ function App() {
       <div className="footer">
         Try to guess today's secret word. The closer to the center, the more
         semantically similar your guess is. Based on{" "}
-        <a href={""} target={"_blank"} rel={"noreferrer"}>
+        <a
+          href={"https://semantle.novalis.org/"}
+          target={"_blank"}
+          rel={"noreferrer"}
+        >
           Semantle
         </a>
         . Created by{" "}
