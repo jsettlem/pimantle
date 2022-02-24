@@ -160,6 +160,10 @@ input[type=button], input[type=submit] {
 	margin-right: 0.5rem;
 }
 
+.hint-button {
+	background-color: rgba(14, 54, 20, 0.58) !important;
+}
+
 .guess-list {
 	overflow-y: auto;
 	overflow-x: visible;
@@ -206,7 +210,7 @@ input[type=button], input[type=submit] {
 }
 
 .bg-quite-hot {
-	background-color: rgba(188, 236, 18, calc(max(0.7, var(--min-opacity))));
+	background-color: rgb(236, 207, 18, calc(max(0.7, var(--min-opacity))));
 	color: black;
 	--outline-color: rgba(255, 255, 255, 0.5);
 }
@@ -239,6 +243,12 @@ input[type=button], input[type=submit] {
 .bg-frigid {
 	background-color: rgba(0, 12, 30, calc(max(0.2, var(--min-opacity))));
 	color: white;
+}
+
+.guess-hint  {
+	border-style: solid;
+	border-width: 0.1rem;
+	border-color: greenyellow;
 }
 
 

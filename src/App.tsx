@@ -20,6 +20,7 @@ export type Word = {
   x: number;
   y: number;
   guessIndex?: number;
+  isHint?: boolean;
 };
 
 type SubmitGuessesParams = {
@@ -111,6 +112,7 @@ function App() {
           (guess: any) => ({
             word: guess.word,
             index: guess.guessIndex,
+            isHint: guess.isHint,
           })
         );
         submitGuesses(storedProgressList);
@@ -123,8 +125,8 @@ function App() {
   }, [parsedWords]);
 
   useEffect(() => {
-    let newPuzzleNumber = "1";
-    setTodaysPuzzle("1");
+    let newPuzzleNumber = "0";
+    setTodaysPuzzle(newPuzzleNumber);
     window
       .fetch(`/secret_words/secret_word_${newPuzzleNumber}.bin`, {
         cache: "force-cache",
@@ -259,6 +261,7 @@ function App() {
     let savedState = newGuessList.map((word) => ({
       word: word.word,
       guessIndex: word.guessIndex,
+      isHint: word.isHint,
     }));
 
     savedState.sort((a, b) => (a.guessIndex || 0) - (b.guessIndex || 0));
@@ -302,6 +305,7 @@ function App() {
           ({
             ...(result as Word),
             guessIndex: guess.index,
+            isHint: guess.isHint,
           } as Word)
         );
       })
@@ -510,8 +514,27 @@ function App() {
     }
   }
 
+  function getHintCount() {
+    return guesses.filter((guess) => guess.isHint).length;
+  }
+
+  function getSolvedText() {
+    let hintCount = getHintCount();
+    let hintText = "";
+    if (hintCount == 0) {
+      hintText = "no hints";
+    } else if (hintCount == 1) {
+      hintText = "1 hint";
+    } else {
+      hintText = `${hintCount} hints`;
+    }
+    return `solved Pimantle #${todaysPuzzle} with ${guesses.length} ${
+      guesses.length > 1 ? "guesses" : "guess"
+    } and ${hintText}!`;
+  }
+
   function getShareString() {
-    return `I found Pimantle #${todaysPuzzle} in ${guesses.length} guesses!`;
+    return `I ${getSolvedText()}`;
   }
 
   function getImageBlob() {
@@ -618,6 +641,35 @@ function App() {
     });
   }
 
+  function getHint() {
+    let firstHintIndex = guesses.length - 1;
+    while (
+      firstHintIndex > 0 &&
+      guesses[firstHintIndex - 1].rank == guesses[firstHintIndex].rank + 1
+    ) {
+      firstHintIndex--;
+    }
+    let lowerHintRange = guesses[firstHintIndex].rank;
+    let hintGoal = lowerHintRange;
+    if (firstHintIndex != 0) {
+      hintGoal = Math.floor(
+        (lowerHintRange + guesses[firstHintIndex - 1].rank) / 2
+      );
+    }
+
+    let hintWord = parsedWords.find((word) => word.rank == hintGoal);
+    if (hintWord) {
+      submitGuesses([
+        {
+          word: hintWord.word,
+          isHint: true,
+        },
+      ]);
+    } else {
+      toast.error("Sorry, we couldn't find a hint (somehow...).");
+    }
+  }
+
   return (
     <div className="App">
       <ToastContainer
@@ -665,15 +717,22 @@ function App() {
                     autoFocus={true}
                   />
                   <input type="submit" value="Guess" className="guess-submit" />
+                  {guesses.length > 10 && (
+                    <input
+                      type="button"
+                      value="Hint"
+                      className="hint-button"
+                      onClick={getHint}
+                    />
+                  )}
                 </form>
               )}
 
               {puzzleSolved && (
                 <div className="solved-container">
                   <div className="congrats-text">
-                    You did it! You solved Pimantle #{todaysPuzzle} in{" "}
-                    {guesses.length} guess{guesses.length > 1 && "es"}. The
-                    secret word was <b>{secret?.word}</b>.
+                    You did it! You {getSolvedText()} The secret word was{" "}
+                    <b>{secret?.word}</b>.
                   </div>
                   <div className="reward-buttons">
                     {typeof navigator.canShare !== "undefined" &&

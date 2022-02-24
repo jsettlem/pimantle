@@ -57,7 +57,9 @@ function GuessEntry({ guess }: { guess: Word }) {
   return (
     <div
       key={guess.word}
-      className={`guess-entry ${getColorClass(guess.rank)}`}
+      className={`guess-entry ${getColorClass(guess.rank)} ${
+        guess.isHint ? "guess-hint" : ""
+      }`}
     >
       <div className="guess-index">{guess.guessIndex}</div>
       <div className="guess-word">{guess.word}</div>
@@ -67,7 +69,9 @@ function GuessEntry({ guess }: { guess: Word }) {
       >
         {guess.rank !== 0 && (guess.rank < 1000 ? "#" + guess.rank : "--")}
       </div>
-      <div className="guess-flavor">{getFlavorText(guess.rank)}</div>
+      <div className="guess-flavor">
+        {guess.isHint ? "Hint" : getFlavorText(guess.rank)}
+      </div>
     </div>
   );
 }

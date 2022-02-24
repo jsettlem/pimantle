@@ -44,7 +44,7 @@ function PlotContainer({
           displayModeBar: true,
         }}
         onInitialized={onInit}
-        // onBeforeHover={(event) => hoverEnabled?.current}
+        onBeforeHover={(event) => hoverEnabled?.current}
         // onUpdate={(figure) => {
         //   console.log("i'm in on-update!", figure);
         //   // setPlotState(figure);
