@@ -10,6 +10,8 @@ import mergeImages from "merge-images";
 import { saveAs } from "file-saver";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import dayjs from "dayjs";
+import Countdown from "react-countdown";
 
 export type Word = {
   index: number;
@@ -88,6 +90,7 @@ function App() {
   let [dataRevision, setDataRevision] = useState<number>(0);
   let [bizarreEdgeCaseThingIHateIt, setBizarreEdgeCaseThingIHateIt] =
     useState<number>(Math.random() / 10000 + 0.00001);
+  let [nextPuzzleTime, setNextPuzzleTime] = useState<Date>(new Date());
 
   function handleResize() {
     centerPlot();
@@ -125,8 +128,14 @@ function App() {
   }, [parsedWords]);
 
   useEffect(() => {
-    let newPuzzleNumber = "0";
-    setTodaysPuzzle(newPuzzleNumber);
+    let epoch = dayjs("2022-02-22T03:00:00");
+    let today = dayjs();
+    let newPuzzleNumber = today.diff(epoch, "days");
+
+    setNextPuzzleTime(epoch.add(newPuzzleNumber + 1, "day").toDate());
+
+    // let newPuzzleNumber = "4";
+    setTodaysPuzzle(newPuzzleNumber.toString());
     window
       .fetch(`/secret_words/secret_word_${newPuzzleNumber}.bin`, {
         cache: "force-cache",
@@ -367,7 +376,9 @@ function App() {
             ...prevState[2].marker,
             color: [
               ...prevState[2].marker.color,
-              ...newGuessObjects.map((guess) => guess.rank),
+              ...newGuessObjects.map((guess) =>
+                guess.isHint ? "lime" : guess.rank
+              ),
             ],
           },
         },
@@ -732,7 +743,8 @@ function App() {
                 <div className="solved-container">
                   <div className="congrats-text">
                     You did it! You {getSolvedText()} The secret word was{" "}
-                    <b>{secret?.word}</b>.
+                    <b>{secret?.word}</b>. New puzzle in{" "}
+                    <Countdown date={nextPuzzleTime} daysInHours={true} />.
                   </div>
                   <div className="reward-buttons">
                     {typeof navigator.canShare !== "undefined" &&

@@ -6,6 +6,7 @@
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
     "@petamoriken/float16": "^3.6.2",
+    "dayjs": "^1.10.7",
     "file-saver": "^2.0.5",
     "merge-images": "^2.0.0",
     "plotly.js-gl2d-dist-min": "^2.9.0",
