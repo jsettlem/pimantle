@@ -137,9 +137,14 @@ function App() {
     // let newPuzzleNumber = "4";
     setTodaysPuzzle(newPuzzleNumber.toString());
     window
-      .fetch(`/secret_words/secret_word_${newPuzzleNumber}.bin`, {
-        cache: "force-cache",
-      })
+      .fetch(
+        `/secret_words/secret_word_${
+          newPuzzleNumber == 1 ? "one" : newPuzzleNumber
+        }.bin`,
+        {
+          cache: "force-cache",
+        }
+      )
       .then((response) => response.arrayBuffer())
       .then((buffer) => {
         let dataView = new DataView(buffer);
