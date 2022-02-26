@@ -616,12 +616,12 @@ function App() {
           });
       });
     } else {
-      navigator.clipboard
+      (navigator.clipboard.write ? navigator.clipboard
         .write([
           new ClipboardItem({
             [textBlob.type]: textBlob,
           }),
-        ])
+        ]) : navigator.clipboard.writeText(shareText))
         .then(() => {
           toast.success("Copied to clipboard!");
         })
