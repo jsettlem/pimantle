@@ -12,6 +12,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import dayjs from "dayjs";
 import Countdown from "react-countdown";
+import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
 
 export type Word = {
   index: number;
@@ -32,7 +33,10 @@ type SubmitGuessesParams = {
 };
 
 function App() {
-  let [todaysPuzzle, setTodaysPuzzle] = useState<string>("?");
+  let [currentPuzzle, setCurrentPuzzle] = useState<string>("?");
+  let [puzzleType, setPuzzleType] = useState<"pimantle" | "semantle">(
+    "pimantle"
+  );
   let [secret, setSecret] = useState<Word>();
   let [xValues, setXValues] = useState<number[]>([]);
   let [yValues, setYValues] = useState<number[]>([]);
@@ -42,6 +46,13 @@ function App() {
   let [mostRecentGuess, setMostRecentGuess] = useState<Word | undefined>(
     undefined
   );
+
+  let [archiveOpen, setArchiveOpen] = useState<boolean>(false);
+  let [isArchivePuzzle, setIsArchivePuzzle] = useState<boolean>(false);
+
+  let [archivePimantles, setArchivePimantles] = useState<ArchiveLink[]>([]);
+  let [archiveSemantles, setArchiveSemantles] = useState<ArchiveLink[]>([]);
+
   let hoverEnabled = useRef<boolean>(true);
 
   const scroller = useRef<HTMLDivElement>(null);
@@ -106,7 +117,7 @@ function App() {
     window.addEventListener("mousedown", enableHover);
     if (guesses.length == 0) {
       let storedProgress = window.localStorage.getItem(
-        `pimantle-${todaysPuzzle}-progress`
+        `${puzzleType}-${currentPuzzle}-progress`
       );
 
       console.log("stored progress", storedProgress);
@@ -128,19 +139,76 @@ function App() {
   }, [parsedWords]);
 
   useEffect(() => {
-    let epoch = dayjs("2022-02-22T03:00:00");
+    let pimantleEpoch = dayjs("2022-02-22T03:00:00");
+    let semantleEpoch = dayjs("2022-01-29T00:00:00Z");
     let today = dayjs();
-    let newPuzzleNumber = today.diff(epoch, "days");
 
-    setNextPuzzleTime(epoch.add(newPuzzleNumber + 1, "day").toDate());
+    let todaysPimantle = today.diff(pimantleEpoch, "days");
+    let todaysSemantle = today.diff(semantleEpoch, "days");
 
-    // let newPuzzleNumber = "4";
-    setTodaysPuzzle(newPuzzleNumber.toString());
+    let pimantleArchive: ArchiveLink[] = [];
+    let semantleArchive: ArchiveLink[] = [];
+    for (let i = todaysSemantle - 1; i >= 0; i--) {
+      let semantleProgress = localStorage.getItem(`semantle-${i}-progress`);
+      let semantleSolved = localStorage.getItem(`semantle-${i}-solved`);
+      semantleArchive.push({
+        puzzleType: "semantle",
+        puzzleIndex: i,
+        started: !!semantleProgress,
+        solved: !!semantleSolved,
+        guesses: semantleProgress && JSON.parse(semantleProgress).length,
+      });
+
+      if (i < todaysPimantle) {
+        let pimantleProgress = localStorage.getItem(`pimantle-${i}-progress`);
+        let pimantleSolved = localStorage.getItem(`pimantle-${i}-solved`);
+        pimantleArchive.push({
+          puzzleType: "pimantle",
+          puzzleIndex: i,
+          started: !!pimantleProgress,
+          solved: !!pimantleSolved,
+          guesses: pimantleProgress && JSON.parse(pimantleProgress).length,
+        });
+      }
+    }
+
+    setArchivePimantles(pimantleArchive);
+    setArchiveSemantles(semantleArchive);
+
+    let newPuzzleNumber = todaysPimantle;
+    let puzzleType = "pimantle";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let urlPuzzleType = urlParams.get("type");
+    let urlPuzzleIndex = parseInt(urlParams.get("puzzle") ?? "-1");
+
+    if (
+      urlPuzzleIndex >= 0 &&
+      ((urlPuzzleType?.startsWith("p") && urlPuzzleIndex < todaysPimantle) ||
+        (urlPuzzleType?.startsWith("s") && urlPuzzleIndex < todaysSemantle))
+    ) {
+      newPuzzleNumber = urlPuzzleIndex;
+      puzzleType = urlPuzzleType?.startsWith("p") ? "pimantle" : "semantle";
+      setIsArchivePuzzle(true);
+      document.title = `Pimantle Archive: ${
+        puzzleType === "pimantle" ? "Pimantle" : "Semantle"
+      } #${newPuzzleNumber}`;
+    }
+
+    if (puzzleType == "pimantle") {
+      setNextPuzzleTime(pimantleEpoch.add(todaysPimantle + 1, "day").toDate());
+      setPuzzleType("pimantle");
+    } else {
+      setNextPuzzleTime(semantleEpoch.add(todaysSemantle + 1, "day").toDate());
+      setPuzzleType("semantle");
+    }
+
+    setCurrentPuzzle(newPuzzleNumber.toString());
     window
       .fetch(
-        `/secret_words/secret_word_${
-          newPuzzleNumber == 1 ? "one" : newPuzzleNumber
-        }.bin`,
+        `/${
+          puzzleType == "pimantle" ? "secret_words" : "semantle_words"
+        }/secret_word_${newPuzzleNumber}.bin`,
         {
           cache: "force-cache",
         }
@@ -281,7 +349,7 @@ function App() {
     savedState.sort((a, b) => (a.guessIndex || 0) - (b.guessIndex || 0));
 
     window.localStorage.setItem(
-      `pimantle-${todaysPuzzle}-progress`,
+      `${puzzleType}-${currentPuzzle}-progress`,
       JSON.stringify(savedState)
     );
   }
@@ -390,6 +458,10 @@ function App() {
       ]);
 
       if (newGuessObjects.some((guess) => guess.rank === 0)) {
+        localStorage.setItem(
+          `${puzzleType}-${currentPuzzle}-solved`,
+          JSON.stringify(new Date().toISOString())
+        );
         setPuzzleSolved(true);
       }
     }
@@ -544,9 +616,12 @@ function App() {
     } else {
       hintText = `${hintCount} hints`;
     }
-    return `solved Pimantle #${todaysPuzzle} with ${guesses.length} ${
-      guesses.length > 1 ? "guesses" : "guess"
-    } and ${hintText}!`;
+
+    let puzzleName = puzzleType == "semantle" ? "Semantle" : "Pimantle";
+    let extraText = puzzleType == "semantle" ? "(on Pimantle) " : "";
+    return `solved ${puzzleName} #${currentPuzzle} ${extraText}with ${
+      guesses.length
+    } ${guesses.length > 1 ? "guesses" : "guess"} and ${hintText}!`;
   }
 
   function getShareString() {
@@ -561,7 +636,7 @@ function App() {
 
   function shareVictory(withImage: boolean) {
     let shareObject = {
-      url: "https://semantle.pimanrul.es",
+      url: window.location.href,
       text: getShareString(),
     };
     let errorMessage =
@@ -569,7 +644,7 @@ function App() {
 
     if (withImage) {
       getImageBlob().then((blob: Blob) => {
-        let file = new File([blob], `pimantle-${todaysPuzzle}.png`, {
+        let file = new File([blob], `${puzzleType}-${currentPuzzle}.png`, {
           type: blob.type,
         });
         if (navigator.canShare({ files: [file] })) {
@@ -595,7 +670,7 @@ function App() {
     if (navigator.clipboard === undefined) {
       toast.error("Sorry, your browser doesn't support copying to clipboard.");
     }
-    let shareText = getShareString() + "\n\nhttps://semantle.pimanrul.es";
+    let shareText = getShareString() + "\n\n" + window.location.href;
     let textBlob = new Blob([shareText], { type: "text/plain" });
     if (withImage) {
       getImageBlob().then((iamgeBlob) => {
@@ -616,12 +691,14 @@ function App() {
           });
       });
     } else {
-      (navigator.clipboard.write ? navigator.clipboard
-        .write([
-          new ClipboardItem({
-            [textBlob.type]: textBlob,
-          }),
-        ]) : navigator.clipboard.writeText(shareText))
+      (navigator.clipboard.write
+        ? navigator.clipboard.write([
+            new ClipboardItem({
+              [textBlob.type]: textBlob,
+            }),
+          ])
+        : navigator.clipboard.writeText(shareText)
+      )
         .then(() => {
           toast.success("Copied to clipboard!");
         })
@@ -653,7 +730,7 @@ function App() {
 
   function downloadVictory() {
     getImageBlob().then((blob) => {
-      saveAs(blob, `pimantle-${todaysPuzzle}.png`);
+      saveAs(blob, `${puzzleType}-${currentPuzzle}.png`);
     });
   }
 
@@ -695,7 +772,103 @@ function App() {
         autoClose={5000}
         theme="dark"
       />
-      <div className="header">Pimantle #{todaysPuzzle}</div>
+      <div className="header">
+        <span className="header-link" onClick={() => setArchiveOpen(true)}>
+          {puzzleType === "semantle" ? "Semantle" : "Pimantle"} #{currentPuzzle}{" "}
+          {isArchivePuzzle && "(archive puzzle)"}
+        </span>
+      </div>
+
+      <div className={`archive-overlay ${archiveOpen ? "archive-open" : ""}`}>
+        <div
+          className="archive-background"
+          onClick={() => setArchiveOpen(false)}
+        />
+        <div className="archive-container">
+          <div className="close-button" onClick={() => setArchiveOpen(false)}>
+            ✕
+          </div>
+          <h1 className="archive-heading">Today's puzzles</h1>
+          <a href="/" className="todays-pimantle archive-puzzle">
+            <div className="tile-title">Today's Pimantle</div>
+          </a>
+          <a
+            href={"https://semantle.novalis.org/"}
+            target={"_blank"}
+            rel={"noreferrer"}
+            className="todays-semantle archive-puzzle"
+          >
+            <div className="tile-title">Today's Semantle</div>
+            <div className="semantle-footnote">(on semantle.novalis.org)</div>
+          </a>
+
+          <h1 className="archive-heading">Puzzle archive</h1>
+          <h2 className="archive-subheading">Pimantle archive</h2>
+          {archivePimantles.map((puzzle, index) => (
+            <ArchiveTile link={puzzle} key={`pimantle-tile-${index}`} />
+          ))}
+
+          <h2 className="archive-subheading">Semantle archive</h2>
+          {archiveSemantles.map((puzzle, index) => (
+            <ArchiveTile link={puzzle} key={`semantle-tile-${index}`} />
+          ))}
+
+          <h1 className="archive-heading">Other things</h1>
+          <div className="archive-footer">
+            <ul>
+              <li>
+                <a
+                  href={"https://twitter.com/pimanrules"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  @pimanrules
+                </a>{" "}
+                on Twitter
+              </li>
+              <li>
+                <a
+                  href={"http://words.pimanrul.es"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  Friendle!
+                </a>{" "}
+                Play a game suspiciously similar to Wordle with your friends
+              </li>
+              <li>
+                <a
+                  href={"https://reddit.com/r/semantle"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  The Semantle subreddit
+                </a>
+              </li>
+              <li>
+                <a
+                  href={"https://github.com/jsettlem/pimantle"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  Source code!
+                </a>{" "}
+                I barely know React; it's bad!
+              </li>
+              <li>
+                <a
+                  href={"https://www.youtube.com/pimanrules"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  Good videos!
+                </a>{" "}
+                Also, bad videos!
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       {parsedWords.length > 0 && (
         <div className="game-container">
           <div className="layout-container">
@@ -815,12 +988,15 @@ function App() {
       )}
       {parsedWords.length === 0 && (
         <div className="loading-container">
-          <div className="loading-text">Loading the Pimantle...</div>
+          <div className="loading-text">
+            Loading the {puzzleType === "semantle" ? "Semantle" : "Pimantle"}...
+          </div>
         </div>
       )}
       <div className="footer">
-        Try to guess today's secret word. The closer to the center, the more
-        semantically similar your guess is. Based on{" "}
+        Try to guess {isArchivePuzzle ? "the" : "today's"} secret word. The
+        closer to the center, the more semantically similar your guess is. Based
+        on{" "}
         <a
           href={"https://semantle.novalis.org/"}
           target={"_blank"}
