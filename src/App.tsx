@@ -208,7 +208,7 @@ function App() {
       .fetch(
         `/${
           puzzleType == "pimantle" ? "secret_words" : "semantle_words"
-        }/secret_word_${newPuzzleNumber}.bin`,
+        }/secret_word_${newPuzzleNumber}.bin?2`,
         {
           cache: "force-cache",
         }
