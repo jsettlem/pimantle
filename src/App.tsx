@@ -105,16 +105,25 @@ function App() {
 
   function handleResize() {
     centerPlot();
+    scroller.current?.scrollTo({
+      top: scroller.current?.scrollHeight,
+    });
   }
 
   function enableHover() {
-    console.log("enable hover");
     hoverEnabled.current = true;
+  }
+
+  function delayedEnableHover() {
+    setTimeout(() => {
+      enableHover();
+    }, 100);
   }
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousedown", enableHover);
+    window.addEventListener("touchstart", delayedEnableHover);
     if (guesses.length == 0) {
       let storedProgress = window.localStorage.getItem(
         `${puzzleType}-${currentPuzzle}-progress`
@@ -135,6 +144,7 @@ function App() {
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousedown", enableHover);
+      window.removeEventListener("touchstart", delayedEnableHover);
     };
   }, [parsedWords]);
 
@@ -837,12 +847,21 @@ function App() {
                 Play a game suspiciously similar to Wordle with your friends
               </li>
               <li>
+                The Semantle{" "}
                 <a
                   href={"https://reddit.com/r/semantle"}
                   target={"_blank"}
                   rel={"noreferrer"}
                 >
-                  The Semantle subreddit
+                  subreddit
+                </a>{" "}
+                and{" "}
+                <a
+                  href={"https://discord.gg/rc5pNWAA7P"}
+                  target={"_blank"}
+                  rel={"noreferrer"}
+                >
+                  Discord server
                 </a>
               </li>
               <li>

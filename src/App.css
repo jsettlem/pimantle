@@ -186,7 +186,7 @@ input[type=button], input[type=submit] {
 .guess-list {
 	overflow-y: auto;
 	overflow-x: visible;
-	max-height: 80vh;
+	max-height: 75vh;
 	margin-bottom: 0.5rem;
 }
 
@@ -462,10 +462,50 @@ hr {
 
 	.guess-input {
 		width: 30rem;
-		max-width: calc(100vw - 12rem);
+		max-width: calc(100vw - 15rem);
 	}
 
 	.guess-list {
 		max-height: 40vh;
+	}
+}
+
+@media (max-height: 700px) {
+	body {
+		font-size: 0.75rem;
+	}
+
+	.guess-entry {
+		border-radius: 0;
+		padding: 0.15rem;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+
+	.guess-list {
+		max-height: 20vh;
+	}
+
+	.guess-input, input[type=button], input[type=submit] {
+		margin-right: 0.5rem;
+		margin-bottom: 0.5rem;
+		font-size: 0.75rem;
+		border-width: 0.1rem;
+		border-radius: 0.25rem;
+		padding: 0.1rem;
+	}
+
+	input[type=button], input[type=submit] {
+		height: 1.5rem;
+	}
+
+	.guess-input {
+		height: 1.25rem;
+		width: 15rem;
+		margin-right: 0.5rem;
+	}
+
+	.guess-container {
+		padding-bottom: 0;
 	}
 }
