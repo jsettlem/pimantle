@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import Countdown from "react-countdown";
 import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
 import localForage from "localforage";
+import ReactGA from "react-ga";
 
 export type Word = {
   index: number;
@@ -207,6 +208,8 @@ function App() {
   }
 
   useEffect(() => {
+    ReactGA.initialize("G-QXGCPQVS46");
+    ReactGA.pageview(window.location.pathname + window.location.search);
     (async () => {
       let pimantleEpoch = dayjs("2022-02-22T03:00:00");
       let semantleEpoch = dayjs("2022-01-29T00:00:00Z");
@@ -542,6 +545,16 @@ function App() {
         }
 
         setPuzzleSolved(true);
+        if (newGuessObjects.length) {
+          ReactGA.event({
+            category: "Puzzle",
+            action: " Solved a puzzle",
+            label: `${puzzleType}-${currentPuzzle} Guesses: ${
+              guesses.length
+            }, Hints: ${guesses.filter((guess) => guess.isHint).length}`,
+            value: guesses.length,
+          });
+        }
       }
     }
   }

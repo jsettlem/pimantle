@@ -14,6 +14,7 @@
     "react": "^17.0.2",
     "react-countdown": "^2.3.2",
     "react-dom": "^17.0.2",
+    "react-ga": "^3.3.0",
     "react-plotly.js": "^2.5.1",
     "react-scripts": "5.0.0",
     "react-toastify": "^8.2.0",
