@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import dayjs from "dayjs";
 import Countdown from "react-countdown";
 import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
+import localForage from "localforage";
 
 export type Word = {
   index: number;
@@ -32,11 +33,17 @@ type SubmitGuessesParams = {
   index?: number;
 };
 
+type SavedPuzzleProgress = {
+  word: string;
+  guessIndex: number;
+  isHint: boolean;
+};
+
+type PuzzleType = "pimantle" | "semantle";
+
 function App() {
   let [currentPuzzle, setCurrentPuzzle] = useState<string>("?");
-  let [puzzleType, setPuzzleType] = useState<"pimantle" | "semantle">(
-    "pimantle"
-  );
+  let [puzzleType, setPuzzleType] = useState<PuzzleType>("pimantle");
   let [secret, setSecret] = useState<Word>();
   let [xValues, setXValues] = useState<number[]>([]);
   let [yValues, setYValues] = useState<number[]>([]);
@@ -125,21 +132,18 @@ function App() {
     window.addEventListener("mousedown", enableHover);
     window.addEventListener("touchstart", delayedEnableHover);
     if (guesses.length == 0) {
-      let storedProgress = window.localStorage.getItem(
-        `${puzzleType}-${currentPuzzle}-progress`
-      );
-
-      console.log("stored progress", storedProgress);
-      if (storedProgress) {
-        let storedProgressList = JSON.parse(storedProgress).map(
-          (guess: any) => ({
-            word: guess.word,
-            index: guess.guessIndex,
-            isHint: guess.isHint,
-          })
-        );
-        submitGuesses(storedProgressList);
-      }
+      loadProgress(puzzleType, currentPuzzle).then((storedProgressList) => {
+        if (storedProgressList) {
+          console.log("stored progress", storedProgressList);
+          submitGuesses(
+            storedProgressList.map((guess: SavedPuzzleProgress) => ({
+              word: guess.word,
+              index: guess.guessIndex,
+              isHint: guess.isHint,
+            }))
+          );
+        }
+      });
     }
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -148,179 +152,242 @@ function App() {
     };
   }, [parsedWords]);
 
-  useEffect(() => {
-    let pimantleEpoch = dayjs("2022-02-22T03:00:00");
-    let semantleEpoch = dayjs("2022-01-29T00:00:00Z");
-    let today = dayjs();
+  function migrateLocalStorage(): Promise<any> {
+    return localForage.getItem("migrated").then((result) => {
+      if (!result) {
+        console.log("migrating local storage");
+        for (let i = 0; i < 100; i++) {
+          for (let puzzleType of ["pimantle", "semantle"]) {
+            let puzzleProgress = localStorage.getItem(
+              `${puzzleType}-${i}-progress`
+            );
 
-    let todaysPimantle = today.diff(pimantleEpoch, "days");
-    let todaysSemantle = today.diff(semantleEpoch, "days");
-
-    let pimantleArchive: ArchiveLink[] = [];
-    let semantleArchive: ArchiveLink[] = [];
-    for (let i = todaysSemantle - 1; i >= 0; i--) {
-      let semantleProgress = localStorage.getItem(`semantle-${i}-progress`);
-      let semantleSolved = localStorage.getItem(`semantle-${i}-solved`);
-      semantleArchive.push({
-        puzzleType: "semantle",
-        puzzleIndex: i,
-        started: !!semantleProgress,
-        solved: !!semantleSolved,
-        guesses: semantleProgress && JSON.parse(semantleProgress).length,
-      });
-
-      if (i < todaysPimantle) {
-        let pimantleProgress = localStorage.getItem(`pimantle-${i}-progress`);
-        let pimantleSolved = localStorage.getItem(`pimantle-${i}-solved`);
-        pimantleArchive.push({
-          puzzleType: "pimantle",
-          puzzleIndex: i,
-          started: !!pimantleProgress,
-          solved: !!pimantleSolved,
-          guesses: pimantleProgress && JSON.parse(pimantleProgress).length,
+            if (puzzleProgress) {
+              saveProgress(
+                puzzleType as PuzzleType,
+                i,
+                JSON.parse(puzzleProgress)
+              );
+            }
+          }
+        }
+        console.log("local storage migrated");
+        return localForage.setItem("migrated", true).catch(() => {
+          toast.error("Error migrating local storage");
         });
       }
-    }
+    });
+  }
 
-    setArchivePimantles(pimantleArchive);
-    setArchiveSemantles(semantleArchive);
-
-    let newPuzzleNumber = todaysPimantle;
-    let puzzleType = "pimantle";
-
-    const urlParams = new URLSearchParams(window.location.search);
-    let urlPuzzleType = urlParams.get("type");
-    let urlPuzzleIndex = parseInt(urlParams.get("puzzle") ?? "-1");
-
-    if (
-      urlPuzzleIndex >= 0 &&
-      ((urlPuzzleType?.startsWith("p") && urlPuzzleIndex < todaysPimantle) ||
-        (urlPuzzleType?.startsWith("s") && urlPuzzleIndex < todaysSemantle))
-    ) {
-      newPuzzleNumber = urlPuzzleIndex;
-      puzzleType = urlPuzzleType?.startsWith("p") ? "pimantle" : "semantle";
-      setIsArchivePuzzle(true);
-      document.title = `Pimantle Archive: ${
-        puzzleType === "pimantle" ? "Pimantle" : "Semantle"
-      } #${newPuzzleNumber}`;
-    }
-
-    if (puzzleType == "pimantle") {
-      setNextPuzzleTime(pimantleEpoch.add(todaysPimantle + 1, "day").toDate());
-      setPuzzleType("pimantle");
-    } else {
-      setNextPuzzleTime(semantleEpoch.add(todaysSemantle + 1, "day").toDate());
-      setPuzzleType("semantle");
-    }
-
-    setCurrentPuzzle(newPuzzleNumber.toString());
-    window
-      .fetch(
-        `/${
-          puzzleType == "pimantle" ? "secret_words" : "semantle_words"
-        }/secret_word_${newPuzzleNumber}.bin?2`,
-        {
-          cache: "force-cache",
-        }
-      )
-      .then((response) => response.arrayBuffer())
-      .then((buffer) => {
-        let dataView = new DataView(buffer);
-        let offset = 4;
-        let parsedWords: Word[] = [];
-        let rank = 0;
-        while (offset < buffer.byteLength) {
-          let index = dataView.getUint32(offset, true);
-          offset += 4;
-          let x = dataView.getFloat32(offset, true);
-          offset += 4;
-          let y = dataView.getFloat32(offset, true);
-          offset += 4;
-          let similarity = getFloat16(dataView, offset, true) * 100;
-          offset += 2;
-          parsedWords.push({
-            index: index,
-            word: wordList[index][0] as string,
-            frequency: wordList[index][1] as number,
-            similarity: similarity,
-            x: x,
-            y: y,
-            rank: rank,
-          });
-          rank++;
-        }
-        setSecret(parsedWords[0]);
-        let newXValues = parsedWords.map((word) => word.x);
-        setXValues(newXValues);
-        let newYValues = parsedWords.map((word) => word.y);
-        setYValues(newYValues);
-
-        setPlotData([
-          {
-            x: newXValues,
-            y: newYValues,
-            text: parsedWords.map((word) => word.word),
-            customdata: parsedWords.map((word) => [
-              word.similarity.toFixed(2),
-              word.rank,
-            ]),
-            mode: "markers",
-            type: "scattergl",
-            marker: {
-              color: "darkblue",
-              opacity: 0.8,
-              // color: parsedWords.map((w) => Math.floor(w.rank / 100)),
-              // color: parsedWords.map(
-              //   (word) => word.rank / parsedWords.length
-              // ),
-            },
-            hoverinfo: "skip",
-          },
-          {
-            x: [parsedWords[0].x],
-            y: [parsedWords[0].y],
-            mode: "markers",
-            type: "scatter",
-            marker: {
-              color: "yellow",
-              size: 15,
-              symbol: "star",
-            },
-            hovertemplate: "<b>Secret word</b><extra></extra>",
-            hoverlabel: {
-              font: {
-                family: "var(--body-font)",
-              },
-            },
-          },
-          {
-            x: [],
-            y: [],
-            customdata: [],
-            text: [],
-            mode: "markers",
-            type: "scatter",
-            marker: {
-              color: [],
-              cmin: 0,
-              cmid: 1000,
-              cmax: parsedWords.length,
-              size: 10,
-              colorscale: "Portland",
-              reversescale: true,
-            },
-            hoverlabel: {
-              font: {
-                family: "var(--body-font)",
-              },
-            },
-            hovertemplate:
-              "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<br>Your guess: %{customdata[2]}<extra></extra>",
-          },
-        ]);
-
-        setParsedWords(parsedWords);
+  function saveProgress(
+    puzzleType: PuzzleType,
+    puzzleNumber: string | number,
+    progress: SavedPuzzleProgress[]
+  ): Promise<any> {
+    return localForage
+      .setItem(`${puzzleType}-${puzzleNumber}-forage`, progress)
+      .catch(() => {
+        toast.error("Error saving progress");
       });
+  }
+
+  function loadProgress(
+    puzzleType: "pimantle" | "semantle",
+    puzzleNumber: string | number
+  ): Promise<SavedPuzzleProgress[] | undefined> {
+    return localForage
+      .getItem(`${puzzleType}-${puzzleNumber}-forage`)
+      .then((result) => {
+        if (result) {
+          return result as SavedPuzzleProgress[];
+        } else {
+          return undefined;
+        }
+      });
+  }
+
+  useEffect(() => {
+    (async () => {
+      let pimantleEpoch = dayjs("2022-02-22T03:00:00");
+      let semantleEpoch = dayjs("2022-01-29T00:00:00Z");
+      let today = dayjs();
+
+      let todaysPimantle = today.diff(pimantleEpoch, "days");
+      let todaysSemantle = today.diff(semantleEpoch, "days");
+
+      let pimantleArchive: ArchiveLink[] = [];
+      let semantleArchive: ArchiveLink[] = [];
+
+      await migrateLocalStorage();
+
+      for (let i = todaysSemantle - 1; i >= 0; i--) {
+        let semantleProgress = await loadProgress("semantle", i);
+        let semantleSolved = localStorage.getItem(`semantle-${i}-solved`);
+        semantleArchive.push({
+          puzzleType: "semantle",
+          puzzleIndex: i,
+          started: !!semantleProgress,
+          solved: !!semantleSolved,
+          guesses: (semantleProgress && semantleProgress.length) ?? 0,
+        });
+
+        if (i < todaysPimantle) {
+          let pimantleProgress = await loadProgress("pimantle", i);
+          let pimantleSolved = localStorage.getItem(`pimantle-${i}-solved`);
+          pimantleArchive.push({
+            puzzleType: "pimantle",
+            puzzleIndex: i,
+            started: !!pimantleProgress,
+            solved: !!pimantleSolved,
+            guesses: (pimantleProgress && pimantleProgress.length) ?? 0,
+          });
+        }
+      }
+
+      setArchivePimantles(pimantleArchive);
+      setArchiveSemantles(semantleArchive);
+
+      let newPuzzleNumber = todaysPimantle;
+      let puzzleType = "pimantle";
+
+      const urlParams = new URLSearchParams(window.location.search);
+      let urlPuzzleType = urlParams.get("type");
+      let urlPuzzleIndex = parseInt(urlParams.get("puzzle") ?? "-1");
+
+      if (
+        urlPuzzleIndex >= 0 &&
+        ((urlPuzzleType?.startsWith("p") && urlPuzzleIndex < todaysPimantle) ||
+          (urlPuzzleType?.startsWith("s") && urlPuzzleIndex < todaysSemantle))
+      ) {
+        newPuzzleNumber = urlPuzzleIndex;
+        puzzleType = urlPuzzleType?.startsWith("p") ? "pimantle" : "semantle";
+        setIsArchivePuzzle(true);
+        document.title = `Pimantle Archive: ${
+          puzzleType === "pimantle" ? "Pimantle" : "Semantle"
+        } #${newPuzzleNumber}`;
+      }
+
+      if (puzzleType == "pimantle") {
+        setNextPuzzleTime(
+          pimantleEpoch.add(todaysPimantle + 1, "day").toDate()
+        );
+        setPuzzleType("pimantle");
+      } else {
+        setNextPuzzleTime(
+          semantleEpoch.add(todaysSemantle + 1, "day").toDate()
+        );
+        setPuzzleType("semantle");
+      }
+
+      setCurrentPuzzle(newPuzzleNumber.toString());
+      window
+        .fetch(
+          `/${
+            puzzleType == "pimantle" ? "secret_words" : "semantle_words"
+          }/secret_word_${newPuzzleNumber}.bin?2`,
+          {
+            cache: "force-cache",
+          }
+        )
+        .then((response) => response.arrayBuffer())
+        .then((buffer) => {
+          let dataView = new DataView(buffer);
+          let offset = 4;
+          let parsedWords: Word[] = [];
+          let rank = 0;
+          while (offset < buffer.byteLength) {
+            let index = dataView.getUint32(offset, true);
+            offset += 4;
+            let x = dataView.getFloat32(offset, true);
+            offset += 4;
+            let y = dataView.getFloat32(offset, true);
+            offset += 4;
+            let similarity = getFloat16(dataView, offset, true) * 100;
+            offset += 2;
+            parsedWords.push({
+              index: index,
+              word: wordList[index][0] as string,
+              frequency: wordList[index][1] as number,
+              similarity: similarity,
+              x: x,
+              y: y,
+              rank: rank,
+            });
+            rank++;
+          }
+          setSecret(parsedWords[0]);
+          let newXValues = parsedWords.map((word) => word.x);
+          setXValues(newXValues);
+          let newYValues = parsedWords.map((word) => word.y);
+          setYValues(newYValues);
+
+          setPlotData([
+            {
+              x: newXValues,
+              y: newYValues,
+              text: parsedWords.map((word) => word.word),
+              customdata: parsedWords.map((word) => [
+                word.similarity.toFixed(2),
+                word.rank,
+              ]),
+              mode: "markers",
+              type: "scattergl",
+              marker: {
+                color: "darkblue",
+                opacity: 0.8,
+                // color: parsedWords.map((w) => Math.floor(w.rank / 100)),
+                // color: parsedWords.map(
+                //   (word) => word.rank / parsedWords.length
+                // ),
+              },
+              hoverinfo: "skip",
+            },
+            {
+              x: [parsedWords[0].x],
+              y: [parsedWords[0].y],
+              mode: "markers",
+              type: "scatter",
+              marker: {
+                color: "yellow",
+                size: 15,
+                symbol: "star",
+              },
+              hovertemplate: "<b>Secret word</b><extra></extra>",
+              hoverlabel: {
+                font: {
+                  family: "var(--body-font)",
+                },
+              },
+            },
+            {
+              x: [],
+              y: [],
+              customdata: [],
+              text: [],
+              mode: "markers",
+              type: "scatter",
+              marker: {
+                color: [],
+                cmin: 0,
+                cmid: 1000,
+                cmax: parsedWords.length,
+                size: 10,
+                colorscale: "Portland",
+                reversescale: true,
+              },
+              hoverlabel: {
+                font: {
+                  family: "var(--body-font)",
+                },
+              },
+              hovertemplate:
+                "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<br>Your guess: %{customdata[2]}<extra></extra>",
+            },
+          ]);
+
+          setParsedWords(parsedWords);
+        });
+    })();
   }, []);
 
   useEffect(() => {
@@ -350,18 +417,15 @@ function App() {
   }
 
   function saveGuesses(newGuessList: Word[]) {
-    let savedState = newGuessList.map((word) => ({
+    let savedState: SavedPuzzleProgress[] = newGuessList.map((word) => ({
       word: word.word,
-      guessIndex: word.guessIndex,
-      isHint: word.isHint,
+      guessIndex: word.guessIndex ?? 0,
+      isHint: word.isHint ?? false,
     }));
 
     savedState.sort((a, b) => (a.guessIndex || 0) - (b.guessIndex || 0));
 
-    window.localStorage.setItem(
-      `${puzzleType}-${currentPuzzle}-progress`,
-      JSON.stringify(savedState)
-    );
+    saveProgress(puzzleType, currentPuzzle, savedState);
   }
 
   function submitGuess(guess: FormEvent<HTMLFormElement>) {
@@ -468,10 +532,15 @@ function App() {
       ]);
 
       if (newGuessObjects.some((guess) => guess.rank === 0)) {
-        localStorage.setItem(
-          `${puzzleType}-${currentPuzzle}-solved`,
-          JSON.stringify(new Date().toISOString())
-        );
+        try {
+          localStorage.setItem(
+            `${puzzleType}-${currentPuzzle}-solved`,
+            JSON.stringify(new Date().toISOString())
+          );
+        } catch (e) {
+          toast.error("Error saving puzzle progress");
+        }
+
         setPuzzleSolved(true);
       }
     }

@@ -8,6 +8,7 @@
     "@petamoriken/float16": "^3.6.2",
     "dayjs": "^1.10.7",
     "file-saver": "^2.0.5",
+    "localforage": "^1.10.0",
     "merge-images": "^2.0.0",
     "plotly.js-gl2d-dist-min": "^2.9.0",
     "react": "^17.0.2",
