@@ -842,6 +842,21 @@ function App() {
       );
     }
 
+    submitHint(hintGoal);
+  }
+
+  function getGoodHint() {
+    let bestGuess = guesses[guesses.length - 1];
+    if (bestGuess.rank == 1) {
+      toast.error("Sorry, you've already got the best hint!");
+      return;
+    }
+
+    let hintGoal = Math.ceil(bestGuess.rank / 2);
+    submitHint(hintGoal);
+  }
+
+  function submitHint(hintGoal: number) {
     let hintWord = parsedWords.find((word) => word.rank == hintGoal);
     if (hintWord) {
       submitGuesses([
@@ -1015,6 +1030,15 @@ function App() {
                       onClick={getHint}
                     />
                   )}
+                  {guesses.filter((g) => g.isHint).length > 6 &&
+                    !guesses.some((guess) => guess.rank === 1) && (
+                      <input
+                        type="button"
+                        value="Good hint"
+                        className="give-up-button"
+                        onClick={getGoodHint}
+                      />
+                    )}
                 </form>
               )}
 

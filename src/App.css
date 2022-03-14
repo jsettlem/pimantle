@@ -183,6 +183,10 @@ input[type=button], input[type=submit] {
 	background-color: rgba(14, 54, 20, 0.58) !important;
 }
 
+.give-up-button {
+	background-color: rgba(54, 14, 14, 0.58) !important;
+}
+
 .guess-list {
 	overflow-y: auto;
 	overflow-x: visible;
