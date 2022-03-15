@@ -15,6 +15,11 @@ import Countdown from "react-countdown";
 import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
 import localForage from "localforage";
 import ReactGA from "react-ga";
+import MultiplayerBackground from "./MultiplayerBackground";
+import { PlotRelayoutEvent } from "plotly.js";
+import { io, Socket } from "socket.io-client";
+import { ClientEvent, ServerEvent } from "./SocketTypes";
+import { Observable, Subject } from "rxjs";
 
 export type Word = {
   index: number;
@@ -73,6 +78,11 @@ function App() {
   let [exploreMode, setExploreMode] = useState<boolean>(false);
 
   let [plotData, setPlotData] = useState<Plotly.Data[]>([]);
+
+  let [displayedXRange, setDisplayedXRange] = useState<number[]>([-0.5, 0.5]);
+  let [displayedYRange, setDisplayedYRange] = useState<number[]>([
+    -0.28125, 0.28125,
+  ]);
   let defaultLayout = {
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
@@ -111,6 +121,20 @@ function App() {
     useState<number>(Math.random() / 10000 + 0.00001);
   let [nextPuzzleTime, setNextPuzzleTime] = useState<Date>(new Date());
 
+  let [socketState, setSocketState] = useState<
+    "connected" | "connecting" | "closed"
+  >("connecting");
+  let [playersOnline, setPlayersOnline] = useState<number>(0);
+  let [socketGuessHandler, setSocketGuessHandler] = useState<
+    (x: number, y: number) => void
+  >(() => {});
+  let [socketDisconnectCallback, setSocketDisconnectCallback] = useState<
+    () => void
+  >(() => {});
+  let socketGuessObservable = useRef<Subject<{ x: number; y: number }>>(
+    new Subject<{ x: number; y: number }>()
+  );
+
   function handleResize() {
     centerPlot();
     scroller.current?.scrollTo({
@@ -141,7 +165,8 @@ function App() {
               word: guess.word,
               index: guess.guessIndex,
               isHint: guess.isHint,
-            }))
+            })),
+            true
           );
         }
       });
@@ -208,8 +233,11 @@ function App() {
   }
 
   useEffect(() => {
-    ReactGA.initialize("G-QXGCPQVS46");
-    ReactGA.pageview(window.location.pathname + window.location.search);
+    if (localStorage.getItem("pimantle-offline")) {
+      setSocketState("closed");
+    }
+    // ReactGA.initialize("G-QXGCPQVS46");
+    // ReactGA.pageview(window.location.pathname + window.location.search);
     (async () => {
       let pimantleEpoch = dayjs("2022-02-22T03:00:00");
       let semantleEpoch = dayjs("2022-01-29T00:00:00Z");
@@ -389,6 +417,52 @@ function App() {
           ]);
 
           setParsedWords(parsedWords);
+
+          if (localStorage.getItem("pimantle-offline")) {
+            setSocketState("closed");
+          } else {
+            let socketUrl: string;
+            if (window.location.href.indexOf("semantle") > -1) {
+              socketUrl = "https://pimantle-backend.herokuapp.com";
+            } else {
+              socketUrl = "http://localhost:8000";
+            }
+            const socket: Socket<ServerEvent, ClientEvent> = io(socketUrl);
+
+            socket.on("connect", () => {
+              setSocketState("connected");
+
+              setSocketGuessHandler(() => (x: number, y: number) => {
+                console.log("submitting a guess", x, y);
+                socket.emit("guess", x, y);
+              });
+
+              setSocketDisconnectCallback(() => () => {
+                localStorage.setItem("pimantle-offline", "true");
+                setSocketState("closed");
+                socket.disconnect();
+              });
+
+              socket.io.on("reconnect_attempt", () => {
+                setSocketState("connecting");
+              });
+
+              socket.io.on("reconnect", () => {
+                setSocketState("connected");
+              });
+
+              socket.on("playerCount", (count: number) => {
+                setPlayersOnline(count);
+              });
+
+              socket.on("newGuess", (x: number, y: number) => {
+                console.log("new server guess", x, y);
+                socketGuessObservable.current.next({ x, y });
+              });
+
+              socket.emit("joinGame", `${puzzleType}-${newPuzzleNumber}`);
+            });
+          }
         });
     })();
   }, []);
@@ -434,11 +508,11 @@ function App() {
   function submitGuess(guess: FormEvent<HTMLFormElement>) {
     guess.preventDefault();
     let newGuess = guess.currentTarget.guess.value.toLowerCase().trim();
-    submitGuesses([{ word: newGuess, isHint: false }]);
+    submitGuesses([{ word: newGuess, isHint: false }], false);
     guess.currentTarget.guess.value = "";
   }
 
-  function submitGuesses(guess: SubmitGuessesParams[]) {
+  function submitGuesses(guess: SubmitGuessesParams[], isBatch: boolean) {
     let newGuessObjects: Word[] = guess
       .map((guess) => {
         let result = checkGuess(guess.word);
@@ -545,16 +619,20 @@ function App() {
         }
 
         setPuzzleSolved(true);
-        if (newGuessObjects.length) {
-          ReactGA.event({
-            category: "Puzzle",
-            action: " Solved a puzzle",
-            label: `${puzzleType}-${currentPuzzle} Guesses: ${
-              guesses.length
-            }, Hints: ${guesses.filter((guess) => guess.isHint).length}`,
-            value: guesses.length,
-          });
-        }
+        // if (newGuessObjects.length) {
+        //   ReactGA.event({
+        //     category: "puzzle",
+        //     action: "solve_puzzle",
+        //     label: `${puzzleType}-${currentPuzzle} Guesses: ${
+        //       guesses.length
+        //     }, Hints: ${guesses.filter((guess) => guess.isHint).length}`,
+        //     value: guesses.length,
+        //   });
+        // }
+      }
+
+      if (!isBatch && newGuessObjects.length) {
+        socketGuessHandler(newGuessObjects[0].x, newGuessObjects[0].y);
       }
     }
   }
@@ -597,7 +675,7 @@ function App() {
 
     let rangeNeeded = Math.max(
       Math.sqrt(target.x * target.x + target.y * target.y) * bufferSize,
-      0.05
+      0.025
     );
 
     let yAxisRange: number;
@@ -641,7 +719,23 @@ function App() {
         },
         uirevision: prevState.uirevision + 1,
       }));
+      setDisplayedXRange(xRange);
+      setDisplayedYRange(yRange);
     }
+  }
+
+  function onRelayout(newLayout: PlotRelayoutEvent) {
+    if (newLayout.autosize) {
+      return;
+    }
+    setDisplayedXRange((old) => [
+      newLayout?.["xaxis.range[0]"] ?? old[0],
+      newLayout?.["xaxis.range[1]"] ?? old[1],
+    ]);
+    setDisplayedYRange((old) => [
+      newLayout?.["yaxis.range[0]"] ?? old[0],
+      newLayout?.["yaxis.range[1]"] ?? old[1],
+    ]);
   }
 
   function generateImage(): Promise<string> {
@@ -859,12 +953,15 @@ function App() {
   function submitHint(hintGoal: number) {
     let hintWord = parsedWords.find((word) => word.rank == hintGoal);
     if (hintWord) {
-      submitGuesses([
-        {
-          word: hintWord.word,
-          isHint: true,
-        },
-      ]);
+      submitGuesses(
+        [
+          {
+            word: hintWord.word,
+            isHint: true,
+          },
+        ],
+        true
+      );
     } else {
       toast.error("Sorry, we couldn't find a hint (somehow...).");
     }
@@ -879,13 +976,59 @@ function App() {
         autoClose={5000}
         theme="dark"
       />
+      {socketState === "connected" && (
+        <MultiplayerBackground
+          xRange={displayedXRange}
+          yRange={displayedYRange}
+          guessObservable={socketGuessObservable}
+        />
+      )}
       <div className="header">
-        <span className="header-link" onClick={() => setArchiveOpen(true)}>
+        <div className="server-panel">
+          {socketState === "connected" && (
+            <>
+              <span
+                className="player-count"
+                title="Players online solving this puzzle"
+              >
+                👤{playersOnline}
+              </span>
+              <input
+                type="button"
+                className="disconnect-button"
+                value="Disconnect"
+                onClick={socketDisconnectCallback}
+              />
+            </>
+          )}
+          {socketState === "connecting" && (
+            <span className="reconnecting">Connecting...</span>
+          )}
+
+          {socketState === "closed" && (
+            <input
+              type="button"
+              className="disconnect-button"
+              value="Reconnect"
+              onClick={() => {
+                localStorage.removeItem("pimantle-offline");
+                setTimeout(() => {
+                  window.location.reload();
+                }, 150);
+              }}
+            />
+          )}
+        </div>
+        <span
+          className="header-link"
+          onClick={() => setArchiveOpen(true)}
+          title="Puzzle archives"
+        >
           {puzzleType === "semantle" ? "Semantle" : "Pimantle"} #{currentPuzzle}{" "}
           {isArchivePuzzle && "(archive puzzle)"}
         </span>
+        <div className="header-right" />
       </div>
-
       <div className={`archive-overlay ${archiveOpen ? "archive-open" : ""}`}>
         <div
           className="archive-background"
@@ -1108,6 +1251,7 @@ function App() {
             onInit={() => centerPlot()}
             hoverEnabled={hoverEnabled}
             revision={dataRevision}
+            onRelayout={onRelayout}
           />
         </div>
       )}

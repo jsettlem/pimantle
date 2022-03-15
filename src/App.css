@@ -1,515 +1,548 @@
 * {
-	--panel-color: rgba(14, 26, 33, 0.5);
-	--min-opacity: 0.0;
-	--body-font: 'Space Grotesk', 'Roboto', sans-serif;
-	--toastify-color-dark: var(--panel-color);
-	--toastify-color-error: rgba(255, 0, 0, 0.54);
-	--toastify-font-family: var(--body-font);
+  --panel-color: rgba(14, 26, 33, 0.5);
+  --min-opacity: 0;
+  --body-font: "Space Grotesk", "Roboto", sans-serif;
+  --toastify-color-dark: var(--panel-color);
+  --toastify-color-error: rgba(255, 0, 0, 0.54);
+  --toastify-font-family: var(--body-font);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
-	:root {
-		--min-opacity: 0.75;
-	}
+  :root {
+    --min-opacity: 0.75;
+  }
 }
 
 .toast-blur {
-	backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 #hidden-plot {
-	display: none;
-	position: fixed;
-	top: 200%;
-	left: 200%;
+  display: none;
+  position: fixed;
+  top: 200%;
+  left: 200%;
 }
 
 .App {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	flex-direction: column;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
-	flex-basis: auto;
-	text-align: center;
-	font-size: 24px;
-	height: 26px;
+  display: flex;
+  flex-basis: auto;
+  text-align: center;
+  font-size: 24px;
+  height: 26px;
+  justify-content: center;
 }
 
 .header-link {
-	cursor: pointer;
-	border-radius: 0.2rem;
-	background-color: rgba(0, 0, 0, 0);
-	padding: 0.5rem;
-	transition: background-color;
-
+  cursor: pointer;
+  border-radius: 0.2rem;
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color;
 }
 
 .header-link:hover {
-	background-color: rgba(0, 0, 0, 0.27);
+  background-color: rgba(0, 0, 0, 0.27);
 }
 
 .header-link::after {
-	content: "▼";
-	padding-left: 0.5rem;
-	font-size: 0.75em;
+  content: "▼";
+  padding-left: 0.5rem;
+  font-size: 0.75em;
 }
 
-.header, .footer {
-	z-index: 99;
-	flex-basis: auto;
-	background-color: #0e1a21;
-	padding: 0.5rem;
-	background-color: var(--panel-color);
-	backdrop-filter: blur(10px);
+.server-panel {
+  text-align: left;
+  flex: 1 1;
+}
+
+.disconnect-button,
+.reconnect-button {
+  font-size: 0.75rem !important;
+  height: 2rem !important;
+  margin-left: 0.5rem;
+  transform: translateY(-0.25rem);
+}
+
+.header-right {
+  flex: 1 1;
+}
+
+.header,
+.footer {
+  z-index: 99;
+  flex-basis: auto;
+  background-color: #0e1a21;
+  padding: 0.5rem;
+  background-color: var(--panel-color);
+  backdrop-filter: blur(10px);
 }
 
 .loading-container {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .loading-text {
-	font-size: 3rem;
-	color: #fff;
+  font-size: 3rem;
+  color: #fff;
 }
 
 .game-container {
-	flex-grow: 1;
-	position: relative;
+  flex-grow: 1;
+  position: relative;
 }
 
-
 a {
-	color: rgb(222, 234, 248);
+  color: rgb(222, 234, 248);
 }
 
 .layout-container {
-	position: absolute !important;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	top: 0;
+  position: absolute !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
 }
 
 .bg-plot-container {
-	position: fixed !important;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	top: 0;
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
 }
 
 .bg-plot-container {
-	z-index: 1;
+  z-index: 1;
 }
 
 .plot {
-	width: 100%;
-	height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .gl-canvas {
-	z-index: -1;
-	transform-origin: var(--plot-center-x) var(--plot-center-y);
+  z-index: -1;
+  transform-origin: var(--plot-center-x) var(--plot-center-y);
 }
 
 .js-plotly-plot .plotly .modebar {
-	left: 30px;
-	right: auto !important;
-	top: 44px !important;
+  left: 30px;
+  right: auto !important;
+  top: 44px !important;
 }
 
 .layout-container {
-	z-index: 2;
-	pointer-events: none;
-	display: flex;
-	flex-direction: row-reverse;
-	flex-wrap: wrap-reverse;
-	align-content: stretch;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
+  align-content: stretch;
 }
 
-.guess-form *, .guess-list, .solved-container {
-	pointer-events: all;
+.guess-form *,
+.guess-list,
+.solved-container {
+  pointer-events: all;
 }
 
 .guess-form {
-	text-align: right;
+  text-align: right;
 }
 
 .guess-container {
-	/*background-color: rgba(231, 4, 4, 0.16);*/
-	align-self: baseline;
-	padding: 1rem;
-	flex-basis: 30rem;
+  /*background-color: rgba(231, 4, 4, 0.16);*/
+  align-self: baseline;
+  padding: 1rem;
+  flex-basis: 30rem;
 }
 
-
-.guess-input, input[type=button], input[type=submit] {
-	margin-right: 0.5rem;
-	margin-bottom: 0.5rem;
-	font-size: 1.5rem;
-	background-color: rgba(14, 26, 33, 0.77);
-	color: #ececec;
-	box-shadow: none;
-	border-style: solid;
-	border-width: 0.1rem;
-	border-radius: 0.5rem;
-	padding: 0.2rem;
-	font-family: var(--body-font);
-	backdrop-filter: blur(3px);
+.guess-input,
+input[type="button"],
+input[type="submit"] {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  background-color: rgba(14, 26, 33, 0.77);
+  color: #ececec;
+  box-shadow: none;
+  border-style: solid;
+  border-width: 0.1rem;
+  border-radius: 0.5rem;
+  padding: 0.2rem;
+  font-family: var(--body-font);
+  backdrop-filter: blur(3px);
 }
 
-input[type=button], input[type=submit] {
-	height: 3rem;
+input[type="button"],
+input[type="submit"] {
+  height: 3rem;
 }
 
 .guess-input {
-	height: 2rem;
-	width: 15rem;
-	margin-right: 0.5rem;
+  height: 2rem;
+  width: 15rem;
+  margin-right: 0.5rem;
 }
 
 .hint-button {
-	background-color: rgba(14, 54, 20, 0.58) !important;
+  background-color: rgba(14, 54, 20, 0.58) !important;
 }
 
 .give-up-button {
-	background-color: rgba(54, 14, 14, 0.58) !important;
+  background-color: rgba(54, 14, 14, 0.58) !important;
 }
 
 .guess-list {
-	overflow-y: auto;
-	overflow-x: visible;
-	max-height: 75vh;
-	margin-bottom: 0.5rem;
+  overflow-y: auto;
+  overflow-x: visible;
+  max-height: 75vh;
+  margin-bottom: 0.5rem;
 }
 
 .guess-entry {
-	display: flex;
-	flex-direction: row;
-	justify-content: left;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-	margin-bottom: 0.5rem;
-	margin-right: 0.2rem;
-	padding: 1rem;
-	border-radius: 0.5rem;
-	backdrop-filter: blur(10px);
-	--outline-color: rgba(0, 0, 0, 0.5);
-	--outline-offset: 0.1rem;
-	--outline-blur: 0.5rem;
-	text-shadow: calc(-1 * var(--outline-offset)) calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
-	0 calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
-	var(--outline-offset) calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
-	var(--outline-offset) 0 var(--outline-blur) var(--outline-color),
-	var(--outline-offset) var(--outline-offset) var(--outline-blur) var(--outline-color),
-	0 var(--outline-offset) var(--outline-blur) var(--outline-color),
-	calc(-1 * var(--outline-offset)) var(--outline-offset) var(--outline-blur) var(--outline-color),
-	calc(-1 * var(--outline-offset)) 0 var(--outline-blur) var(--outline-color);
-	color: white;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  margin-right: 0.2rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(10px);
+  --outline-color: rgba(0, 0, 0, 0.5);
+  --outline-offset: 0.1rem;
+  --outline-blur: 0.5rem;
+  text-shadow: calc(-1 * var(--outline-offset)) calc(-1 * var(--outline-offset))
+      var(--outline-blur) var(--outline-color),
+    0 calc(-1 * var(--outline-offset)) var(--outline-blur) var(--outline-color),
+    var(--outline-offset) calc(-1 * var(--outline-offset)) var(--outline-blur)
+      var(--outline-color),
+    var(--outline-offset) 0 var(--outline-blur) var(--outline-color),
+    var(--outline-offset) var(--outline-offset) var(--outline-blur)
+      var(--outline-color),
+    0 var(--outline-offset) var(--outline-blur) var(--outline-color),
+    calc(-1 * var(--outline-offset)) var(--outline-offset) var(--outline-blur)
+      var(--outline-color),
+    calc(-1 * var(--outline-offset)) 0 var(--outline-blur) var(--outline-color);
+  color: white;
 }
 
 .bg-correct {
-	background-color: rgba(26, 255, 199, calc(max(0.9, var(--min-opacity))));
-	color: black;
-	--outline-color: rgba(255, 255, 255, 0.5);
-	--outline-radius: 0;
+  background-color: rgba(26, 255, 199, calc(max(0.9, var(--min-opacity))));
+  color: black;
+  --outline-color: rgba(255, 255, 255, 0.5);
+  --outline-radius: 0;
 }
 
 .bg-very-hot {
-	background-color: rgba(250, 252, 238, calc(max(0.8, var(--min-opacity))));
-	color: black;
-	--outline-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(250, 252, 238, calc(max(0.8, var(--min-opacity))));
+  color: black;
+  --outline-color: rgba(255, 255, 255, 0.5);
 }
 
 .bg-quite-hot {
-	background-color: rgb(236, 207, 18, calc(max(0.7, var(--min-opacity))));
-	color: black;
-	--outline-color: rgba(255, 255, 255, 0.5);
+  background-color: rgb(236, 207, 18, calc(max(0.7, var(--min-opacity))));
+  color: black;
+  --outline-color: rgba(255, 255, 255, 0.5);
 }
 
 .bg-hot {
-	background-color: rgba(250, 50, 4, calc(max(0.6, var(--min-opacity))));
-	color: white;
+  background-color: rgba(250, 50, 4, calc(max(0.6, var(--min-opacity))));
+  color: white;
 }
 
 .bg-toasty {
-	background-color: rgba(196, 0, 0, calc(max(0.5, var(--min-opacity))));
-	color: white;
+  background-color: rgba(196, 0, 0, calc(max(0.5, var(--min-opacity))));
+  color: white;
 }
 
 .bg-warm {
-	background-color: rgba(126, 0, 38, calc(max(0.4, var(--min-opacity))));
-	color: white;
+  background-color: rgba(126, 0, 38, calc(max(0.4, var(--min-opacity))));
+  color: white;
 }
 
 .bg-tepid {
-	background-color: rgba(52, 0, 80, calc(max(0.3, var(--min-opacity))));
-	color: white;
+  background-color: rgba(52, 0, 80, calc(max(0.3, var(--min-opacity))));
+  color: white;
 }
 
 .bg-cold {
-	background-color: rgba(5, 0, 59, calc(max(0.25, var(--min-opacity))));
-	color: white;
+  background-color: rgba(5, 0, 59, calc(max(0.25, var(--min-opacity))));
+  color: white;
 }
 
 .bg-frigid {
-	background-color: rgba(0, 12, 30, calc(max(0.2, var(--min-opacity))));
-	color: white;
+  background-color: rgba(0, 12, 30, calc(max(0.2, var(--min-opacity))));
+  color: white;
 }
 
 .guess-hint {
-	border-style: solid;
-	border-width: 0.1rem;
-	border-color: greenyellow;
+  border-style: solid;
+  border-width: 0.1rem;
+  border-color: greenyellow;
 }
 
-
 .guess-index {
-	flex-basis: 2rem;
-	font-variant-numeric: tabular-nums;
+  flex-basis: 2rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .guess-word {
-	flex-grow: 1;
+  flex-grow: 1;
 }
 
 .guess-similarity {
-	flex-basis: 1rem;
-	font-variant-numeric: tabular-nums;
+  flex-basis: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .guess-rank {
-	flex-basis: 3rem;
-	text-align: right;
+  flex-basis: 3rem;
+  text-align: right;
 }
 
 .guess-rank-placeholder {
-	flex-basis: 3rem;
-	text-align: center;
+  flex-basis: 3rem;
+  text-align: center;
 }
 
 .guess-flavor {
-	flex-basis: 4rem;
-	text-align: right;
+  flex-basis: 4rem;
+  text-align: right;
 }
 
-
 .safe-container {
-	pointer-events: none;
-	/*background-color: rgba(0, 255, 4, 0.1);*/
-	border-radius: 1rem;
-	margin: 1rem;
-	flex-grow: 1;
+  pointer-events: none;
+  /*background-color: rgba(0, 255, 4, 0.1);*/
+  border-radius: 1rem;
+  margin: 1rem;
+  flex-grow: 1;
 }
 
 hr {
-	margin-bottom: 0.5em;
-	opacity: 0.5;
+  margin-bottom: 0.5em;
+  opacity: 0.5;
 }
 
 .congrats-text {
-	padding: 0.25rem;
-	background-color: var(--panel-color);
-	border-radius: 0.25rem;
-	font-variant-numeric: tabular-nums;
+  padding: 0.25rem;
+  background-color: var(--panel-color);
+  border-radius: 0.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .archive-overlay {
-	position: fixed;
-	left: 0;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	width: 100%;
-	height: 100%;
-	z-index: 9999999;
-	pointer-events: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999999;
+  pointer-events: none;
 }
 
 .archive-open {
-	pointer-events: all;
+  pointer-events: all;
 }
 
 .archive-background {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0);
-	z-index: -1;
-	transition: background-color;
-	transition-duration: 0.2s;
-	transition-timing-function: ease-in-out;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0);
+  z-index: -1;
+  transition: background-color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
 }
 
 .archive-open > .archive-background {
-	background-color: rgba(0, 0, 0, 0.83);
+  background-color: rgba(0, 0, 0, 0.83);
 }
 
 .archive-container {
-	background-color: var(--panel-color);
-	backdrop-filter: blur(20px);
-	border-radius: 2rem;
-	padding: 5rem;
-	box-sizing: border-box;
-	position: absolute;
-	top: 100%;
-	left: 0;
-	right: 0;
-	margin: 0 auto;
-	width: 40rem;
-	max-width: 95%;
-	max-height: calc(95% - 5rem);
-	overflow-y: auto;
-	transition: top;
-	transition-duration: 0.2s;
-	transition-timing-function: ease-in-out;
+  background-color: var(--panel-color);
+  backdrop-filter: blur(20px);
+  border-radius: 2rem;
+  padding: 5rem;
+  box-sizing: border-box;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 40rem;
+  max-width: 95%;
+  max-height: calc(95% - 5rem);
+  overflow-y: auto;
+  transition: top;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
 }
 
 .archive-open > .archive-container {
-	top: 5rem;
+  top: 5rem;
 }
 
 .close-button {
-	position: absolute;
-	right: 3rem;
-	top: 1rem;
-	font-size: 2rem;
-	cursor: pointer;
+  position: absolute;
+  right: 3rem;
+  top: 1rem;
+  font-size: 2rem;
+  cursor: pointer;
 }
 
 .archive-heading {
-	margin-top: 1rem;
+  margin-top: 1rem;
 }
 
 .archive-subheading {
-	margin-top: 0.5rem;
-	margin-left: 0.5rem;
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
 }
 
 .archive-puzzle {
-	display: flex;
-	text-decoration: none;
-	background-color: rgba(0, 61, 199, 0.3);
-	width: 100%;
-	padding: 1rem;
-	margin: 1rem;
-	border-radius: 1rem;
-	transition: background-color;
-	transition-duration: 0.2s;
-	transition-timing-function: ease-out;
-	align-items: center;
+  display: flex;
+  text-decoration: none;
+  background-color: rgba(0, 61, 199, 0.3);
+  width: 100%;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 1rem;
+  transition: background-color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+  align-items: center;
 }
 
 .archive-puzzle:hover {
-	background-color: rgba(0, 61, 199, 1);
+  background-color: rgba(0, 61, 199, 1);
 }
 
 .tile-star {
-	flex-basis: 3rem;
-	font-size: 2rem;
-	text-align: center;
+  flex-basis: 3rem;
+  font-size: 2rem;
+  text-align: center;
 }
 
 .solved-star {
-	color: yellow;
+  color: yellow;
 }
 
 .unsolved-star {
-	color: rgba(255, 234, 0, 0.29);
+  color: rgba(255, 234, 0, 0.29);
 }
 
 .tile-title {
-	flex-grow: 1;
-	font-size: 2rem;
-	margin-right: 0.25rem;
+  flex-grow: 1;
+  font-size: 2rem;
+  margin-right: 0.25rem;
 }
 
 .semantle-footnote {
-	font-size: 0.75rem;
+  font-size: 0.75rem;
 }
 
 .archive-footer {
-	margin-left: 1.5rem;
+  margin-left: 1.5rem;
 }
 
 .tile-guesses {
-	text-align: right;
+  text-align: right;
+}
 
+.background-canvas {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 100vw;
 }
 
 @media (max-aspect-ratio: 1/1) {
-	.layout-container {
-		flex-direction: column-reverse;
-		flex-wrap: wrap;
-	}
+  .layout-container {
+    flex-direction: column-reverse;
+    flex-wrap: wrap;
+  }
 
-	.guess-container {
-		flex-basis: 6rem;
-		width: 50rem;
-		max-width: 90vw;
-	}
+  .guess-container {
+    flex-basis: 6rem;
+    width: 50rem;
+    max-width: 90vw;
+  }
 
-	.guess-form {
-		text-align: left;
-	}
+  .guess-form {
+    text-align: left;
+  }
 
-	.guess-input {
-		width: 30rem;
-		max-width: calc(100vw - 15rem);
-	}
+  .guess-input {
+    width: 30rem;
+    max-width: calc(100vw - 15rem);
+  }
 
-	.guess-list {
-		max-height: 40vh;
-	}
+  .guess-list {
+    max-height: 40vh;
+  }
 }
 
 @media (max-height: 700px) {
-	body {
-		font-size: 0.75rem;
-	}
+  body {
+    font-size: 0.75rem;
+  }
 
-	.guess-entry {
-		border-radius: 0;
-		padding: 0.15rem;
-		margin-top: 0;
-		margin-bottom: 0;
-	}
+  .guess-entry {
+    border-radius: 0;
+    padding: 0.15rem;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
 
-	.guess-list {
-		max-height: 20vh;
-	}
+  .guess-list {
+    max-height: 20vh;
+  }
 
-	.guess-input, input[type=button], input[type=submit] {
-		margin-right: 0.5rem;
-		margin-bottom: 0.5rem;
-		font-size: 0.75rem;
-		border-width: 0.1rem;
-		border-radius: 0.25rem;
-		padding: 0.1rem;
-	}
+  .guess-input,
+  input[type="button"],
+  input[type="submit"] {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    border-width: 0.1rem;
+    border-radius: 0.25rem;
+    padding: 0.1rem;
+  }
 
-	input[type=button], input[type=submit] {
-		height: 1.5rem;
-	}
+  input[type="button"],
+  input[type="submit"] {
+    height: 1.5rem;
+  }
 
-	.guess-input {
-		height: 1.25rem;
-		width: 15rem;
-		margin-right: 0.5rem;
-	}
+  .guess-input {
+    height: 1.25rem;
+    width: 15rem;
+    margin-right: 0.5rem;
+  }
 
-	.guess-container {
-		padding-bottom: 0;
-	}
+  .guess-container {
+    padding-bottom: 0;
+  }
 }

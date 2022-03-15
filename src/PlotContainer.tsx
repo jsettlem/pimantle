@@ -1,5 +1,6 @@
 import Plot from "react-plotly.js";
 import React, { MutableRefObject } from "react";
+import { PlotRelayoutEvent } from "plotly.js";
 
 export type PlotProperties = {
   data: any;
@@ -7,6 +8,7 @@ export type PlotProperties = {
   onInit: () => void;
   hoverEnabled: MutableRefObject<boolean>;
   revision: number;
+  onRelayout: (event: PlotRelayoutEvent) => void;
 };
 
 function PlotContainer({
@@ -15,6 +17,7 @@ function PlotContainer({
   onInit,
   hoverEnabled,
   revision,
+  onRelayout,
 }: PlotProperties) {
   return (
     <div
@@ -51,6 +54,7 @@ function PlotContainer({
         // }}
         revision={revision}
         useResizeHandler={true}
+        onRelayout={onRelayout}
         divId="plot-div"
       />
     </div>
