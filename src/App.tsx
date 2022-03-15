@@ -1187,7 +1187,7 @@ function App() {
                     </a>{" "}
                     or{" "}
                     <a
-                      href={"https://reddit.com/r/semantle"}
+                      href={"https://reddit.com/r/pimantle"}
                       target={"_blank"}
                       rel={"noreferrer"}
                     >
