@@ -40,22 +40,27 @@ function MultiplayerBackground({
     let subscription = guessObservable.current
       .asObservable()
       .subscribe((guess) => {
+        if (document.hidden) {
+          return;
+        }
+
         console.log("got a new guess", guess);
         let left = mapToX(guess.x, canvasRef.current);
         let top = mapToY(guess.y, canvasRef.current);
 
         if (guess.x === 0 && guess.y === 0) {
+          let star = new fabric.Polygon(starShape, {
+            left: left,
+            top: top,
+            fill: "yellow",
+            originX: "center",
+            originY: "center",
+            scaleX: 0,
+            scaleY: 0,
+            opacity: 0.25,
+          });
           canvasRef.current?.add(
-            new fabric.Polygon(starShape, {
-              left: left,
-              top: top,
-              fill: "yellow",
-              originX: "center",
-              originY: "center",
-              scaleX: 0,
-              scaleY: 0,
-              opacity: 0.25,
-            })
+            star
               .animate("scaleX", 200, {
                 duration: 1000,
               })
@@ -65,26 +70,33 @@ function MultiplayerBackground({
               .animate("opacity", 0, {
                 duration: 1000,
                 onChange: canvasRef.current?.renderAll.bind(canvasRef.current),
+                onComplete: () => {
+                  canvasRef.current?.remove(star);
+                },
               })
           );
         } else {
           console.log("time to draw a circle!", left, top, canvasRef.current);
+          let circle = new fabric.Circle({
+            left: left,
+            top: top,
+            fill: "darkgreen",
+            originX: "center",
+            originY: "center",
+            radius: 0,
+            opacity: 1,
+          });
           canvasRef.current?.add(
-            new fabric.Circle({
-              left: left,
-              top: top,
-              fill: "darkgreen",
-              originX: "center",
-              originY: "center",
-              radius: 0,
-              opacity: 1,
-            })
+            circle
               .animate("radius", 50, {
                 duration: 1000,
               })
               .animate("opacity", 0, {
                 duration: 1000,
                 onChange: canvasRef.current?.renderAll.bind(canvasRef.current),
+                onComplete: () => {
+                  canvasRef.current?.remove(circle);
+                },
               })
           );
         }
