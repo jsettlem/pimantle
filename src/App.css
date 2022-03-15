@@ -60,6 +60,8 @@
 .server-panel {
   text-align: left;
   flex: 1 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .disconnect-button,
