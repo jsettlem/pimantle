@@ -47,6 +47,8 @@ type SavedPuzzleProgress = {
 
 type PuzzleType = "pimantle" | "semantle";
 
+let difficultPimantles: string[] = ["26"];
+
 function App() {
   let [currentPuzzle, setCurrentPuzzle] = useState<string>("?");
   let [puzzleType, setPuzzleType] = useState<PuzzleType>("pimantle");
@@ -1207,6 +1209,13 @@ function App() {
                     .
                   </p>
                 </div>
+                {puzzleType === "pimantle" &&
+                  difficultPimantles.indexOf(currentPuzzle) !== -1 && (
+                    <div className={`guess-entry bg-warm`}>
+                      {isArchivePuzzle ? "This" : "Today's"} puzzle is really
+                      hard! Sorry...
+                    </div>
+                  )}
                 {mostRecentGuess && (
                   <>
                     {guesses.map((guess) => (
