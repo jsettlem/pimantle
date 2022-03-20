@@ -155,6 +155,7 @@ function App() {
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousedown", enableHover);
+    window.addEventListener("wheel", enableHover);
     window.addEventListener("touchstart", delayedEnableHover);
     if (guesses.length == 0) {
       loadProgress(puzzleType, currentPuzzle).then((storedProgressList) => {
@@ -174,6 +175,7 @@ function App() {
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousedown", enableHover);
+      window.removeEventListener("wheel", enableHover);
       window.removeEventListener("touchstart", delayedEnableHover);
     };
   }, [parsedWords]);
@@ -1140,6 +1142,15 @@ function App() {
                     Try to guess {isArchivePuzzle ? "the" : "today's"} secret
                     word. The closer to the center, the more semantically
                     similar your guess is.{" "}
+                  </p>
+                  <p>
+                    Please be aware that the dataset includes offensive words
+                    (including slurs!) which may be surfaced by the "hint" and
+                    "explore" features.{" "}
+                  </p>
+                  <p>
+                    This site is designed for desktop. It'll work on mobile, but
+                    you'll likely run into some issues.
                   </p>
                   <p>
                     Based on{" "}
