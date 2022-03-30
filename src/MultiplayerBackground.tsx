@@ -44,7 +44,6 @@ function MultiplayerBackground({
           return;
         }
 
-        console.log("got a new guess", guess);
         let left = mapToX(guess.x, canvasRef.current);
         let top = mapToY(guess.y, canvasRef.current);
 
@@ -76,7 +75,6 @@ function MultiplayerBackground({
               })
           );
         } else {
-          console.log("time to draw a circle!", left, top, canvasRef.current);
           let circle = new fabric.Circle({
             left: left,
             top: top,

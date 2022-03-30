@@ -8,8 +8,8 @@
 }
 
 @supports not (backdrop-filter: blur(1px)) {
-  :root {
-    --min-opacity: 0.75;
+  * {
+    --min-opacity: 0.85;
   }
 }
 
@@ -478,6 +478,32 @@ hr {
   top: 0;
   height: 100vh;
   width: 100vw;
+}
+
+.stats-box {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+
+.stats-box td {
+  text-align: right;
+}
+
+.stats-box th,
+.stats-box td {
+  padding: 0.25rem;
+}
+
+.stats-box input {
+  font-size: 0.75rem !important;
+  height: 2rem !important;
+  margin-left: 1rem;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
 }
 
 @media (max-aspect-ratio: 1/1) {

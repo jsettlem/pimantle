@@ -18,8 +18,16 @@ import ReactGA from "react-ga";
 import MultiplayerBackground from "./MultiplayerBackground";
 import { PlotRelayoutEvent } from "plotly.js";
 import { io, Socket } from "socket.io-client";
-import { ClientEvent, ServerEvent } from "./SocketTypes";
+import {
+  ClientEvent,
+  LesserStatsUpdate,
+  ServerEvent,
+  SolveStatus,
+  StatsUpdate,
+} from "./SocketTypes";
 import { Observable, Subject } from "rxjs";
+import { Debugger } from "inspector";
+import StatsPanel, { StatsStatus } from "./StatsPanel";
 
 export type Word = {
   index: number;
@@ -85,6 +93,14 @@ function App() {
   let [displayedYRange, setDisplayedYRange] = useState<number[]>([
     -0.28125, 0.28125,
   ]);
+
+  let [stats, setStats] = useState<StatsStatus>({
+    totalGuesses: 0,
+    totalSolves: 0,
+    totalSolveGuesses: 0,
+    buckets: [],
+  });
+
   let defaultLayout = {
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
@@ -128,7 +144,7 @@ function App() {
   >("connecting");
   let [playersOnline, setPlayersOnline] = useState<number>(0);
   let [socketGuessHandler, setSocketGuessHandler] = useState<
-    (x: number, y: number) => void
+    (x: number, y: number, solvedState: SolveStatus | undefined) => void
   >(() => () => {});
   let [socketDisconnectCallback, setSocketDisconnectCallback] = useState<
     () => void
@@ -426,7 +442,7 @@ function App() {
             setSocketState("closed");
           } else {
             let socketUrl: string;
-            if (window.location.href.indexOf("semantle") > -1 || true) {
+            if (window.location.href.indexOf("pimanrul.es") > -1 || true) {
               socketUrl = "https://pimantle-backend.herokuapp.com";
             } else {
               socketUrl = "http://localhost:8000";
@@ -436,11 +452,18 @@ function App() {
             socket.on("connect", () => {
               setSocketState("connected");
 
-              setSocketGuessHandler(() => (x: number, y: number) => {
-                console.log("submitting a guess", x, y);
+              setSocketGuessHandler(
+                () =>
+                  (
+                    x: number,
+                    y: number,
+                    solveStatus: SolveStatus | undefined
+                  ) => {
+                    console.log("submitting a guess", x, y);
 
-                socket.emit("guess", x, y);
-              });
+                    socket.emit("guess", x, y, solveStatus);
+                  }
+              );
 
               setSocketDisconnectCallback(() => () => {
                 localStorage.setItem("pimantle-offline", "true");
@@ -463,6 +486,24 @@ function App() {
               socket.on("newGuess", (x: number, y: number) => {
                 console.log("new server guess", x, y);
                 socketGuessObservable.current.next({ x, y });
+              });
+
+              socket.on(
+                "guessWithStats",
+                (
+                  x: number,
+                  y: number,
+                  stats: StatsUpdate | LesserStatsUpdate
+                ) => {
+                  console.log("new server guess", x, y);
+                  socketGuessObservable.current.next({ x, y });
+                  updateStats(stats);
+                }
+              );
+
+              socket.on("statsUpdate", (stats: StatsUpdate) => {
+                console.log("got some stats!", stats);
+                updateStats(stats);
               });
 
               socket.emit("joinGame", `${puzzleType}-${newPuzzleNumber}`);
@@ -493,6 +534,22 @@ function App() {
   useEffect(() => {
     setDataRevision((old) => old + 1);
   }, [plotData]);
+
+  function updateStats(stats: StatsUpdate | LesserStatsUpdate) {
+    if (stats.type == "greater") {
+      setStats({
+        totalGuesses: stats.total_guesses,
+        totalSolves: stats.total_solves,
+        totalSolveGuesses: stats.total_guesses_for_solves,
+        buckets: [],
+      });
+    } else {
+      setStats((old) => ({
+        ...old,
+        totalGuesses: stats.totalGuesses,
+      }));
+    }
+  }
 
   function checkGuess(guess: string): Word | undefined {
     return parsedWords.find((word) => word.word === guess);
@@ -569,7 +626,9 @@ function App() {
         (result: Word | undefined): result is Word => result !== undefined
       );
 
+    let guessCount = guesses.length;
     if (newGuessObjects.length > 0) {
+      guessCount += newGuessObjects.length;
       setGuesses((old) => {
         let newGuessList = [...old, ...newGuessObjects].sort(
           (a, b) => b.rank - a.rank
@@ -613,31 +672,42 @@ function App() {
         },
       ]);
 
+      let puzzleJustSolved = false;
+
       if (newGuessObjects.some((guess) => guess.rank === 0)) {
-        try {
+        const savePuzzleSolved = () => {
           localStorage.setItem(
             `${puzzleType}-${currentPuzzle}-solved`,
             JSON.stringify(new Date().toISOString())
           );
+        };
+        try {
+          if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist().then(function () {
+              savePuzzleSolved();
+            });
+          } else {
+            savePuzzleSolved();
+          }
         } catch (e) {
           toast.error("Error saving puzzle progress");
         }
 
         setPuzzleSolved(true);
-        // if (newGuessObjects.length) {
-        //   ReactGA.event({
-        //     category: "puzzle",
-        //     action: "solve_puzzle",
-        //     label: `${puzzleType}-${currentPuzzle} Guesses: ${
-        //       guesses.length
-        //     }, Hints: ${guesses.filter((guess) => guess.isHint).length}`,
-        //     value: guesses.length,
-        //   });
-        // }
+        puzzleJustSolved = true;
       }
 
       if (!isBatch && newGuessObjects.length) {
-        socketGuessHandler(newGuessObjects[0].x, newGuessObjects[0].y);
+        socketGuessHandler(
+          newGuessObjects[0].x,
+          newGuessObjects[0].y,
+          puzzleJustSolved
+            ? {
+                guessesUsed: guessCount,
+                hintsUsed: 0,
+              }
+            : undefined
+        );
       }
     }
   }
@@ -797,6 +867,11 @@ function App() {
     return guesses.filter((guess) => guess.isHint).length;
   }
 
+  function getPuzzleName() {
+    let puzzleName = puzzleType == "semantle" ? "Semantle" : "Pimantle";
+    return `${puzzleName} #${currentPuzzle}`;
+  }
+
   function getSolvedText() {
     let hintCount = getHintCount();
     let hintText = "";
@@ -808,11 +883,10 @@ function App() {
       hintText = `${hintCount} hints`;
     }
 
-    let puzzleName = puzzleType == "semantle" ? "Semantle" : "Pimantle";
     let extraText = puzzleType == "semantle" ? "(on Pimantle) " : "";
-    return `solved ${puzzleName} #${currentPuzzle} ${extraText}with ${
-      guesses.length
-    } ${guesses.length > 1 ? "guesses" : "guess"} and ${hintText}!`;
+    return `solved ${getPuzzleName()} ${extraText}with ${guesses.length} ${
+      guesses.length > 1 ? "guesses" : "guess"
+    } and ${hintText}!`;
   }
 
   function getShareString() {
@@ -970,6 +1044,10 @@ function App() {
     } else {
       toast.error("Sorry, we couldn't find a hint (somehow...).");
     }
+  }
+
+  function getGuessCount() {
+    return guesses.length;
   }
 
   return (
@@ -1216,6 +1294,10 @@ function App() {
                       hard! Sorry...
                     </div>
                   )}
+
+                {socketState === "connected" && (
+                  <StatsPanel puzzleName={getPuzzleName()} stats={stats} />
+                )}
                 {mostRecentGuess && (
                   <>
                     {guesses.map((guess) => (
