@@ -11,7 +11,7 @@ export type PlotProperties = {
   onRelayout: (event: PlotRelayoutEvent) => void;
 };
 
-function PlotContainer({
+function DumbPlotContainer({
   data,
   layout,
   onInit,
@@ -60,5 +60,9 @@ function PlotContainer({
     </div>
   );
 }
+
+const PlotContainer = React.memo(DumbPlotContainer, (prev, next) => {
+  return prev.revision === next.revision;
+});
 
 export default PlotContainer;

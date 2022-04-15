@@ -533,7 +533,7 @@ function App() {
 
   useEffect(() => {
     setDataRevision((old) => old + 1);
-  }, [plotData]);
+  }, [plotData, plotLayout]);
 
   function updateStats(stats: StatsUpdate | LesserStatsUpdate) {
     if (stats.type == "greater") {
