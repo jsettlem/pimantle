@@ -1,7 +1,13 @@
 import { Word } from "./App";
 import React, { useEffect, useRef } from "react";
 
-function GuessEntry({ guess }: { guess: Word }) {
+function GuessEntry({
+  guess,
+  animated = false,
+}: {
+  guess: Word;
+  animated?: boolean;
+}) {
   function getFlavorText(rank: number): string {
     if (rank === 0) {
       return "FLAMEO, HOTMAN!";
@@ -56,21 +62,29 @@ function GuessEntry({ guess }: { guess: Word }) {
 
   return (
     <div
-      key={guess.word}
-      className={`guess-entry ${getColorClass(guess.rank)} ${
-        guess.isHint ? "guess-hint" : ""
+      className={`guess-wrapper ${
+        animated && !guess.isBulk && guess.rank !== 0 ? "slide-in" : ""
       }`}
     >
-      <div className="guess-index">{guess.guessIndex}</div>
-      <div className="guess-word">{guess.word}</div>
-      <div className="guess-similarity">{guess.similarity.toFixed(2)}</div>
       <div
-        className={guess.rank < 1000 ? "guess-rank" : "guess-rank-placeholder"}
+        key={guess.word}
+        className={`guess-entry ${getColorClass(guess.rank)} ${
+          guess.isHint ? "guess-hint" : ""
+        }`}
       >
-        {guess.rank !== 0 && (guess.rank < 1000 ? "#" + guess.rank : "--")}
-      </div>
-      <div className="guess-flavor">
-        {guess.isHint ? "Hint" : getFlavorText(guess.rank)}
+        <div className="guess-index">{guess.guessIndex}</div>
+        <div className="guess-word">{guess.word}</div>
+        <div className="guess-similarity">{guess.similarity.toFixed(2)}</div>
+        <div
+          className={
+            guess.rank < 1000 ? "guess-rank" : "guess-rank-placeholder"
+          }
+        >
+          {guess.rank !== 0 && (guess.rank < 1000 ? "#" + guess.rank : "--")}
+        </div>
+        <div className="guess-flavor">
+          {guess.isHint ? "Hint" : getFlavorText(guess.rank)}
+        </div>
       </div>
     </div>
   );

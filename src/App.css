@@ -1,3 +1,7 @@
+:root {
+  --slide-direction: 1;
+}
+
 * {
   --panel-color: rgba(14, 26, 33, 0.5);
   --min-opacity: 0;
@@ -212,9 +216,11 @@ input[type="submit"] {
 
 .guess-list {
   overflow-y: auto;
-  overflow-x: visible;
+  overflow-x: hidden;
   max-height: 75vh;
   margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column-reverse;
 }
 
 .guess-entry {
@@ -328,6 +334,21 @@ input[type="submit"] {
 .guess-flavor {
   flex-basis: 4rem;
   text-align: right;
+}
+
+.slide-in {
+  animation: slide-in 0.5s ease-in-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(calc(120% * var(--slide-direction)));
+    max-height: 0;
+  }
+  to {
+    transform: translateX(0%);
+    max-height: 100px;
+  }
 }
 
 .safe-container {
@@ -529,6 +550,10 @@ hr {
 
   .guess-list {
     max-height: 40vh;
+  }
+
+  :root {
+    --slide-direction: -1;
   }
 }
 

@@ -39,6 +39,7 @@ export type Word = {
   y: number;
   guessIndex?: number;
   isHint?: boolean;
+  isBulk?: boolean;
 };
 
 type SubmitGuessesParams = {
@@ -574,7 +575,8 @@ function App() {
     guess.currentTarget.guess.value = "";
   }
 
-  function submitGuesses(guess: SubmitGuessesParams[], isBatch: boolean) {
+  function submitGuesses(guess: SubmitGuessesParams[], isAutomated: boolean) {
+    let isBulk = guess.length > 1;
     let newGuessObjects: Word[] = guess
       .map((guess) => {
         let result = checkGuess(guess.word);
@@ -601,6 +603,7 @@ function App() {
             ...(result as Word),
             guessIndex: guess.index,
             isHint: guess.isHint,
+            isBulk: isBulk,
           } as Word)
         );
       })
@@ -697,7 +700,7 @@ function App() {
         puzzleJustSolved = true;
       }
 
-      if (!isBatch && newGuessObjects.length) {
+      if (!isAutomated && newGuessObjects.length) {
         socketGuessHandler(
           newGuessObjects[0].x,
           newGuessObjects[0].y,
@@ -1216,6 +1219,28 @@ function App() {
           <div className="layout-container">
             <div className="guess-container">
               <div className="guess-list" ref={scroller}>
+                {mostRecentGuess && (
+                  <>
+                    {puzzleSolved || (
+                      <div>
+                        <hr />
+                        <GuessEntry guess={mostRecentGuess} />
+                      </div>
+                    )}
+                    {[...guesses].reverse().map((guess) => (
+                      <GuessEntry
+                        guess={guess}
+                        animated={true}
+                        key={`first-guess-${guess.word}`}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {socketState === "connected" && (
+                  <StatsPanel puzzleName={getPuzzleName()} stats={stats} />
+                )}
+
                 <div className={`guess-entry bg-frigid`}>
                   <h3>Welcome to Pimantle!</h3>
                   <p>
@@ -1287,33 +1312,6 @@ function App() {
                     .
                   </p>
                 </div>
-                {puzzleType === "pimantle" &&
-                  difficultPimantles.indexOf(currentPuzzle) !== -1 && (
-                    <div className={`guess-entry bg-warm`}>
-                      {isArchivePuzzle ? "This" : "Today's"} puzzle is really
-                      hard! Sorry...
-                    </div>
-                  )}
-
-                {socketState === "connected" && (
-                  <StatsPanel puzzleName={getPuzzleName()} stats={stats} />
-                )}
-                {mostRecentGuess && (
-                  <>
-                    {guesses.map((guess) => (
-                      <GuessEntry
-                        guess={guess}
-                        key={`first-guess-${guess.word}`}
-                      />
-                    ))}
-                    {puzzleSolved || (
-                      <div>
-                        <hr />
-                        <GuessEntry guess={mostRecentGuess} />
-                      </div>
-                    )}
-                  </>
-                )}
               </div>
 
               {puzzleSolved || (

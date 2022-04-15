@@ -25,11 +25,11 @@ function StatsPanel({
     <div className={`guess-entry stats-box bg-tepid ${pinned ? "sticky" : ""}`}>
       <p>
         <b>{puzzleName} stats</b>
-        <input
-          type="button"
-          value={pinned ? "Unpin" : "Pin"}
-          onClick={() => setPinned((old) => !old)}
-        />
+        {/*<input*/}
+        {/*  type="button"*/}
+        {/*  value={pinned ? "Unpin" : "Pin"}*/}
+        {/*  onClick={() => setPinned((old) => !old)}*/}
+        {/*/>*/}
       </p>
       <table>
         <thead>
