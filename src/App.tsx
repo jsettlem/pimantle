@@ -28,6 +28,8 @@ import {
 import { Observable, Subject } from "rxjs";
 import { Debugger } from "inspector";
 import StatsPanel, { StatsStatus } from "./StatsPanel";
+import WelcomePanel from "./WelcomePanel";
+import ArchiveDropdown from "./ArchiveDropdown";
 
 export type Word = {
   index: number;
@@ -1115,105 +1117,12 @@ function App() {
         </span>
         <div className="header-right" />
       </div>
-      <div className={`archive-overlay ${archiveOpen ? "archive-open" : ""}`}>
-        <div
-          className="archive-background"
-          onClick={() => setArchiveOpen(false)}
-        />
-        <div className="archive-container">
-          <div className="close-button" onClick={() => setArchiveOpen(false)}>
-            ✕
-          </div>
-          <h1 className="archive-heading">Today's puzzles</h1>
-          <a href="/" className="todays-pimantle archive-puzzle">
-            <div className="tile-title">Today's Pimantle</div>
-          </a>
-          <a
-            href={"https://semantle.novalis.org/"}
-            target={"_blank"}
-            rel={"noreferrer"}
-            className="todays-semantle archive-puzzle"
-          >
-            <div className="tile-title">Today's Semantle</div>
-            <div className="semantle-footnote">(on semantle.novalis.org)</div>
-          </a>
-
-          <h1 className="archive-heading">Puzzle archive</h1>
-          <h2 className="archive-subheading">Pimantle archive</h2>
-          {archivePimantles.map((puzzle, index) => (
-            <ArchiveTile link={puzzle} key={`pimantle-tile-${index}`} />
-          ))}
-
-          <h2 className="archive-subheading">Semantle archive</h2>
-          {archiveSemantles.map((puzzle, index) => (
-            <ArchiveTile link={puzzle} key={`semantle-tile-${index}`} />
-          ))}
-
-          <h1 className="archive-heading">Other things</h1>
-          <div className="archive-footer">
-            <ul>
-              <li>
-                <a
-                  href={"https://twitter.com/pimanrules"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  @pimanrules
-                </a>{" "}
-                on Twitter
-              </li>
-              <li>
-                <a
-                  href={"http://words.pimanrul.es"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  Friendle!
-                </a>{" "}
-                Play a game suspiciously similar to Wordle with your friends
-              </li>
-              <li>
-                The Semantle{" "}
-                <a
-                  href={"https://reddit.com/r/semantle"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  subreddit
-                </a>{" "}
-                and{" "}
-                <a
-                  href={"https://discord.gg/rc5pNWAA7P"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  Discord server
-                </a>
-              </li>
-              <li>
-                <a
-                  href={"https://github.com/jsettlem/pimantle"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  Source code!
-                </a>{" "}
-                I barely know React; it's bad!
-              </li>
-              <li>
-                <a
-                  href={"https://www.youtube.com/pimanrules"}
-                  target={"_blank"}
-                  rel={"noreferrer"}
-                >
-                  Good videos!
-                </a>{" "}
-                Also, bad videos!
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <ArchiveDropdown
+        isOpen={archiveOpen}
+        close={() => setArchiveOpen(false)}
+        archivePimantles={archivePimantles}
+        archiveSemantles={archiveSemantles}
+      />
       {parsedWords.length > 0 && (
         <div className="game-container">
           <div className="layout-container">
@@ -1241,77 +1150,7 @@ function App() {
                   <StatsPanel puzzleName={getPuzzleName()} stats={stats} />
                 )}
 
-                <div className={`guess-entry bg-frigid`}>
-                  <h3>Welcome to Pimantle!</h3>
-                  <p>
-                    Try to guess {isArchivePuzzle ? "the" : "today's"} secret
-                    word. The closer to the center, the more semantically
-                    similar your guess is.{" "}
-                  </p>
-                  <p>
-                    Please be aware that the dataset includes offensive words
-                    (including slurs!) which may be surfaced by the "hint" and
-                    "explore" features.{" "}
-                  </p>
-                  <p>
-                    This site is designed for desktop. It'll work on mobile, but
-                    you'll likely run into some issues.
-                  </p>
-                  <p>
-                    Based on{" "}
-                    <a
-                      href={"https://semantle.novalis.org/"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      Semantle
-                    </a>
-                    . Created by{" "}
-                    <a
-                      href={"https://pimanrul.es"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      pimanrules
-                    </a>
-                    . You can contact me on Twitter{" "}
-                    <a
-                      href={"https://twitter.com/pimanrules"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      @pimanrules
-                    </a>{" "}
-                    or check out my good and/or bad videos on{" "}
-                    <a
-                      href={"https://youtube.com/pimanrules"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      YouTube
-                    </a>
-                    .
-                  </p>
-                  <p>
-                    To chat with other Pimantlers, check out the (unofficial){" "}
-                    <a
-                      href={"https://discord.gg/rc5pNWAA7P"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      Semantle Discord server
-                    </a>{" "}
-                    or{" "}
-                    <a
-                      href={"https://reddit.com/r/pimantle"}
-                      target={"_blank"}
-                      rel={"noreferrer"}
-                    >
-                      Pimantle Subreddit
-                    </a>
-                    .
-                  </p>
-                </div>
+                <WelcomePanel isArchivePuzzle={isArchivePuzzle} />
               </div>
 
               {puzzleSolved || (
