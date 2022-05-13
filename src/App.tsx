@@ -30,6 +30,7 @@ import { Debugger } from "inspector";
 import StatsPanel, { StatsStatus } from "./StatsPanel";
 import WelcomePanel from "./WelcomePanel";
 import ArchiveDropdown from "./ArchiveDropdown";
+import SettingsDropdown from "./SettingsDropdown";
 
 export type Word = {
   index: number;
@@ -74,6 +75,7 @@ function App() {
   );
 
   let [archiveOpen, setArchiveOpen] = useState<boolean>(false);
+  let [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   let [isArchivePuzzle, setIsArchivePuzzle] = useState<boolean>(false);
 
   let [archivePimantles, setArchivePimantles] = useState<ArchiveLink[]>([]);
@@ -1115,13 +1117,25 @@ function App() {
           {puzzleType === "semantle" ? "Semantle" : "Pimantle"} #{currentPuzzle}{" "}
           {isArchivePuzzle && "(archive puzzle)"}
         </span>
-        <div className="header-right" />
+        <span className="header-right">
+          {/*<span*/}
+          {/*  className="header-link"*/}
+          {/*  onClick={() => setSettingsOpen(true)}*/}
+          {/*  title="Settings"*/}
+          {/*>*/}
+          {/*  ⚙*/}
+          {/*</span>*/}
+        </span>
       </div>
       <ArchiveDropdown
         isOpen={archiveOpen}
         close={() => setArchiveOpen(false)}
         archivePimantles={archivePimantles}
         archiveSemantles={archiveSemantles}
+      />
+      <SettingsDropdown
+        isOpen={settingsOpen}
+        close={() => setSettingsOpen(false)}
       />
       {parsedWords.length > 0 && (
         <div className="game-container">

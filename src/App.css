@@ -78,6 +78,7 @@
 
 .header-right {
   flex: 1 1;
+  text-align: right;
 }
 
 .header,
@@ -403,6 +404,7 @@ hr {
 }
 
 .archive-container {
+  display: flex;
   background-color: var(--panel-color);
   backdrop-filter: blur(20px);
   border-radius: 2rem;
@@ -413,23 +415,28 @@ hr {
   left: 0;
   right: 0;
   margin: 0 auto;
-  width: 40rem;
-  max-width: 95%;
+  width: 95%;
   max-height: calc(95% - 5rem);
   overflow-y: auto;
   transition: top;
   transition-duration: 0.2s;
   transition-timing-function: ease-in-out;
+  justify-content: center;
 }
 
 .archive-open > .archive-container {
   top: 5rem;
 }
 
+.archive-column {
+  max-width: 25rem;
+  padding: 2rem;
+}
+
 .close-button {
   position: absolute;
-  right: 3rem;
-  top: 1rem;
+  left: 2rem;
+  top: 0.5rem;
   font-size: 2rem;
   cursor: pointer;
 }
@@ -489,8 +496,57 @@ hr {
   margin-left: 1.5rem;
 }
 
+.kofi-iframe {
+  border: none;
+  width: 100%;
+  padding: 0;
+  max-height: 600px;
+  min-width: 260px;
+  background: white;
+  filter: invert(100%);
+}
+
 .tile-guesses {
   text-align: right;
+}
+
+.social-panel {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.social-button {
+  width: 3rem;
+  padding: 0.5rem;
+  opacity: 0.7;
+  transition: opacity;
+  transition-duration: 0.2s;
+}
+
+.social-button:hover {
+  opacity: 1;
+}
+
+@media (max-width: 1000px) {
+  .archive-container {
+    width: 99%;
+    padding: 0;
+    justify-content: start;
+  }
+
+  .archive-puzzle {
+    padding: 0.25rem;
+    margin: 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .tile-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
 }
 
 .background-canvas {

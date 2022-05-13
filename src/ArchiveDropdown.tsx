@@ -21,93 +21,119 @@ function ArchiveDropdown({
         <div className="close-button" onClick={() => close()}>
           ✕
         </div>
-        <h1 className="archive-heading">Today's puzzles</h1>
-        <a href="/" className="todays-pimantle archive-puzzle">
-          <div className="tile-title">Today's Pimantle</div>
-        </a>
-        <a
-          href={"https://semantle.novalis.org/"}
-          target={"_blank"}
-          rel={"noreferrer"}
-          className="todays-semantle archive-puzzle"
-        >
-          <div className="tile-title">Today's Semantle</div>
-          <div className="semantle-footnote">(on semantle.novalis.org)</div>
-        </a>
+        <div className="archive-column">
+          <h1 className="archive-heading">Today's puzzles</h1>
+          <a href="/" className="todays-pimantle archive-puzzle">
+            <div className="tile-title">Today's Pimantle</div>
+          </a>
+          <a
+            href={"https://semantle.com/"}
+            target={"_blank"}
+            rel={"noreferrer"}
+            className="todays-semantle archive-puzzle"
+          >
+            <div className="tile-title">Today's Semantle</div>
+            <div className="semantle-footnote">(on semantle.com)</div>
+          </a>
 
-        <h1 className="archive-heading">Puzzle archive</h1>
-        <h2 className="archive-subheading">Pimantle archive</h2>
-        {archivePimantles.map((puzzle, index) => (
-          <ArchiveTile link={puzzle} key={`pimantle-tile-${index}`} />
-        ))}
+          <h1 className="archive-heading">Pimantle archive</h1>
+          {archivePimantles.map((puzzle, index) => (
+            <ArchiveTile link={puzzle} key={`pimantle-tile-${index}`} />
+          ))}
+        </div>
 
-        <h2 className="archive-subheading">Semantle archive</h2>
-        {archiveSemantles.map((puzzle, index) => (
-          <ArchiveTile link={puzzle} key={`semantle-tile-${index}`} />
-        ))}
-
-        <h1 className="archive-heading">Other things</h1>
-        <div className="archive-footer">
-          <ul>
-            <li>
-              <a
-                href={"https://twitter.com/pimanrules"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                @pimanrules
-              </a>{" "}
-              on Twitter
-            </li>
-            <li>
-              <a
-                href={"http://words.pimanrul.es"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                Friendle!
-              </a>{" "}
-              Play a game suspiciously similar to Wordle with your friends
-            </li>
-            <li>
-              The Semantle{" "}
-              <a
-                href={"https://reddit.com/r/semantle"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                subreddit
-              </a>{" "}
-              and{" "}
-              <a
-                href={"https://discord.gg/rc5pNWAA7P"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                Discord server
-              </a>
-            </li>
-            <li>
-              <a
-                href={"https://github.com/jsettlem/pimantle"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                Source code!
-              </a>{" "}
-              I barely know React; it's bad!
-            </li>
-            <li>
-              <a
-                href={"https://www.youtube.com/pimanrules"}
-                target={"_blank"}
-                rel={"noreferrer"}
-              >
-                Good videos!
-              </a>{" "}
-              Also, bad videos!
-            </li>
-          </ul>
+        <div className="archive-column">
+          <h1 className="archive-heading">Other things</h1>
+          <h2 className="archive-subheading">Follow me</h2>
+          <div className="social-panel">
+            <a
+              href="https://youtube.com/pimanrules"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/youtube.svg"
+                alt="youtube"
+              />
+            </a>
+            <a
+              href="https://twitter.com/pimanrules"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/twitter.svg"
+                alt="twitter"
+              />
+            </a>
+          </div>
+          <h2 className="archive-subheading">Source code</h2>
+          <div className="social-panel">
+            <a
+              href="https://github.com/jsettlem/pimantle"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/github.svg"
+                alt="github"
+              />
+            </a>
+          </div>
+          <h2 className="archive-subheading">(Unofficial) Communities</h2>
+          <div className="social-panel">
+            <a
+              href="https://discord.gg/rc5pNWAA7P"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/discord.svg"
+                alt="discord"
+              />
+            </a>
+            <a
+              href="https://reddit.com/r/pimantle"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/reddit.svg"
+                alt="reddit"
+              />
+            </a>
+          </div>
+          <h2 className="archive-subheading">Other games</h2>
+          <div className="social-panel">
+            <a
+              href="http://words.pimanrul.es"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                className="social-button"
+                src="/socials/friendle.png"
+                alt="friendle"
+              />
+            </a>
+          </div>
+          <h2 className="archive-subheading">Support me</h2>
+          <iframe
+            id="kofiframe"
+            src="https://ko-fi.com/pimanrules/?hidefeed=true&widget=true&embed=true&preview=true"
+            className="kofi-iframe"
+            height="712"
+            title="pimanrules"
+          ></iframe>
+          <h1 className="archive-heading">Semantle archive</h1>
+          {archiveSemantles.map((puzzle, index) => (
+            <ArchiveTile link={puzzle} key={`semantle-tile-${index}`} />
+          ))}
         </div>
       </div>
     </div>
