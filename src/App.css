@@ -9,6 +9,7 @@
   --toastify-color-dark: var(--panel-color);
   --toastify-color-error: rgba(255, 0, 0, 0.54);
   --toastify-font-family: var(--body-font);
+  color-scheme: dark;
 }
 
 @supports not (backdrop-filter: blur(1px)) {
