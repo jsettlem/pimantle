@@ -1,12 +1,5 @@
-import { Word } from "./App";
-import React, { useEffect, useRef } from "react";
-
-export type StatsStatus = {
-  totalGuesses: number;
-  totalSolves: number;
-  totalSolveGuesses: number;
-  buckets: [];
-};
+import { useEffect, useState } from "react";
+import { StatsStatus } from "./stats.model";
 
 function StatsPanel({
   puzzleName,
@@ -15,7 +8,7 @@ function StatsPanel({
   puzzleName: string;
   stats: StatsStatus;
 }) {
-  let [pinned, setPinned] = React.useState(false);
+  let [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     console.log("stats!", stats);

@@ -1,10 +1,6 @@
-import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
-import React from "react";
+import { SettingsDropdownProps } from "./settings.model";
 
-export type SettingsDropdownProps = {
-  isOpen: boolean;
-  close: () => void;
-};
+
 
 function SettingsDropdown({ isOpen, close }: SettingsDropdownProps) {
   return (
