@@ -1,22 +1,13 @@
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import wordList from "./data/word_list.json";
 import { getFloat16 } from "@petamoriken/float16";
-import GuessEntry from "./GuessEntry";
-// @ts-ignore
-import Plotly from "plotly.js-gl2d-dist-min";
-import PlotContainer from "./PlotContainer";
-import mergeImages from "merge-images";
-import { saveAs } from "file-saver";
+import PlotContainer from "./plot/PlotContainer";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import dayjs from "dayjs";
-import Countdown from "react-countdown";
-import ArchiveTile, { ArchiveLink } from "./ArchiveLink";
-import localForage from "localforage";
-import ReactGA from "react-ga";
+import { ArchiveLink } from "./archive/ArchiveLink";
 import MultiplayerBackground from "./MultiplayerBackground";
-import { PlotRelayoutEvent } from "plotly.js";
 import { io, Socket } from "socket.io-client";
 import {
   ClientEvent,
@@ -25,80 +16,51 @@ import {
   SolveStatus,
   StatsUpdate,
 } from "./SocketTypes";
-import { Observable, Subject } from "rxjs";
-import { Debugger } from "inspector";
-import StatsPanel, { StatsStatus } from "./StatsPanel";
-import WelcomePanel from "./WelcomePanel";
-import ArchiveDropdown from "./ArchiveDropdown";
-import SettingsDropdown from "./SettingsDropdown";
-
-export type Word = {
-  index: number;
-  rank: number;
-  word: string;
-  similarity: number;
-  frequency: number;
-  x: number;
-  y: number;
-  guessIndex?: number;
-  isHint?: boolean;
-  isBulk?: boolean;
-};
-
-type SubmitGuessesParams = {
-  word: string;
-  isHint: boolean;
-  index?: number;
-};
-
-type SavedPuzzleProgress = {
-  word: string;
-  guessIndex: number;
-  isHint: boolean;
-};
-
-type PuzzleType = "pimantle" | "semantle";
+import { Subject } from "rxjs";
+import ArchiveDropdown from "./archive/ArchiveDropdown";
+import SettingsDropdown from "./settings/SettingsDropdown";
+import { Word } from "./guesses/guesses.model";
+import { PuzzleType } from "./puzzle/puzzle.model";
+import { loadProgress, migrateLocalStorage } from "./puzzle/puzzle.component";
+import { StatsStatus } from "./stats/stats.model";
+import Guesses from "./guesses/guesses.component";
+// @ts-ignore
+import Plotly from "plotly.js-gl2d-dist-min";
+import ServerPanel from "./server/ServerPanel.component";
 
 let difficultPimantles: string[] = ["26"];
 
 function App() {
-  let [currentPuzzle, setCurrentPuzzle] = useState<string>("?");
-  let [puzzleType, setPuzzleType] = useState<PuzzleType>("pimantle");
   let [secret, setSecret] = useState<Word>();
   let [xValues, setXValues] = useState<number[]>([]);
   let [yValues, setYValues] = useState<number[]>([]);
-  let [guesses, setGuesses] = useState<Word[]>([]);
-  let [puzzleSolved, setPuzzleSolved] = useState<boolean>(false);
-  let [plotCenter, setPlotCenter] = useState<number[]>([0, 0]);
-  let [mostRecentGuess, setMostRecentGuess] = useState<Word | undefined>(
-    undefined
-  );
-
-  let [archiveOpen, setArchiveOpen] = useState<boolean>(false);
-  let [settingsOpen, setSettingsOpen] = useState<boolean>(false);
-  let [isArchivePuzzle, setIsArchivePuzzle] = useState<boolean>(false);
-
-  let [archivePimantles, setArchivePimantles] = useState<ArchiveLink[]>([]);
-  let [archiveSemantles, setArchiveSemantles] = useState<ArchiveLink[]>([]);
-
-  let hoverEnabled = useRef<boolean>(true);
-
-  const scroller = useRef<HTMLDivElement>(null);
-  const inputBox = useRef<HTMLFormElement>(null);
-
-  let [parsedWords, setParsedWords] = useState<Word[]>([]);
-
-  let [socialImage, setSocialImage] = useState<string>("");
-  let [downloadingImage, setDownloadingImage] = useState<boolean>(false);
-  let [exploreMode, setExploreMode] = useState<boolean>(false);
-
   let [plotData, setPlotData] = useState<Plotly.Data[]>([]);
-
+  let hoverEnabled = useRef<boolean>(true);
   let [displayedXRange, setDisplayedXRange] = useState<number[]>([-0.5, 0.5]);
   let [displayedYRange, setDisplayedYRange] = useState<number[]>([
     -0.28125, 0.28125,
   ]);
+  const scroller = useRef<HTMLDivElement>(null);
 
+  let [archiveOpen, setArchiveOpen] = useState<boolean>(false);
+  let [isArchivePuzzle, setIsArchivePuzzle] = useState<boolean>(false);
+
+  let [archivePimantles, setArchivePimantles] = useState<ArchiveLink[]>([]);
+  let [archiveSemantles, setArchiveSemantles] = useState<ArchiveLink[]>([]);
+  let [puzzleType, setPuzzleType] = useState<PuzzleType>("pimantle");
+  let [currentPuzzle, setCurrentPuzzle] = useState<string>("?");
+  let [parsedWords, setParsedWords] = useState<Word[]>([]);
+  let [guesses, setGuesses] = useState<Word[]>([]);
+  let [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  let [socketGuessHandler, setSocketGuessHandler] = useState<
+    (x: number, y: number, solvedState: SolveStatus | undefined) => void
+  >(() => () => {});
+  let [dataRevision, setDataRevision] = useState<number>(0);
+  let [bizarreEdgeCaseThingIHateIt, setBizarreEdgeCaseThingIHateIt] =
+    useState<number>(Math.random() / 10000 + 0.00001);
+  let [plotCenter, setPlotCenter] = useState<number[]>([0, 0]);
+
+  let [nextPuzzleTime, setNextPuzzleTime] = useState<Date>(new Date());
   let [stats, setStats] = useState<StatsStatus>({
     totalGuesses: 0,
     totalSolves: 0,
@@ -137,124 +99,32 @@ function App() {
     uirevision: 1,
   };
 
-  let [plotLayout, setPlotLayout] = useState<Plotly.Layout>(defaultLayout);
-
-  let [dataRevision, setDataRevision] = useState<number>(0);
-  let [bizarreEdgeCaseThingIHateIt, setBizarreEdgeCaseThingIHateIt] =
-    useState<number>(Math.random() / 10000 + 0.00001);
-  let [nextPuzzleTime, setNextPuzzleTime] = useState<Date>(new Date());
-
   let [socketState, setSocketState] = useState<
     "connected" | "connecting" | "closed"
   >("connecting");
   let [playersOnline, setPlayersOnline] = useState<number>(0);
-  let [socketGuessHandler, setSocketGuessHandler] = useState<
-    (x: number, y: number, solvedState: SolveStatus | undefined) => void
-  >(() => () => {});
   let [socketDisconnectCallback, setSocketDisconnectCallback] = useState<
     () => void
   >(() => {});
   let socketGuessObservable = useRef<Subject<{ x: number; y: number }>>(
     new Subject<{ x: number; y: number }>()
   );
+  let [plotLayout, setPlotLayout] = useState<Plotly.Layout>(defaultLayout);
 
-  function handleResize() {
-    centerPlot();
-    scroller.current?.scrollTo({
-      top: scroller.current?.scrollHeight,
-    });
-  }
-
-  function enableHover() {
-    hoverEnabled.current = true;
-  }
-
-  function delayedEnableHover() {
-    setTimeout(() => {
-      enableHover();
-    }, 100);
-  }
-
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("mousedown", enableHover);
-    window.addEventListener("wheel", enableHover);
-    window.addEventListener("touchstart", delayedEnableHover);
-    if (guesses.length == 0) {
-      loadProgress(puzzleType, currentPuzzle).then((storedProgressList) => {
-        if (storedProgressList) {
-          console.log("stored progress", storedProgressList);
-          submitGuesses(
-            storedProgressList.map((guess: SavedPuzzleProgress) => ({
-              word: guess.word,
-              index: guess.guessIndex,
-              isHint: guess.isHint,
-            })),
-            true
-          );
-        }
+  function updateStats(stats: StatsUpdate | LesserStatsUpdate) {
+    if (stats.type == "greater") {
+      setStats({
+        totalGuesses: stats.total_guesses,
+        totalSolves: stats.total_solves,
+        totalSolveGuesses: stats.total_guesses_for_solves,
+        buckets: [],
       });
+    } else {
+      setStats((old) => ({
+        ...old,
+        totalGuesses: stats.totalGuesses,
+      }));
     }
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousedown", enableHover);
-      window.removeEventListener("wheel", enableHover);
-      window.removeEventListener("touchstart", delayedEnableHover);
-    };
-  }, [parsedWords]);
-
-  function migrateLocalStorage(): Promise<any> {
-    return localForage.getItem("migrated").then((result) => {
-      if (!result) {
-        console.log("migrating local storage");
-        for (let i = 0; i < 100; i++) {
-          for (let puzzleType of ["pimantle", "semantle"]) {
-            let puzzleProgress = localStorage.getItem(
-              `${puzzleType}-${i}-progress`
-            );
-
-            if (puzzleProgress) {
-              saveProgress(
-                puzzleType as PuzzleType,
-                i,
-                JSON.parse(puzzleProgress)
-              );
-            }
-          }
-        }
-        console.log("local storage migrated");
-        return localForage.setItem("migrated", true).catch(() => {
-          toast.error("Error migrating local storage");
-        });
-      }
-    });
-  }
-
-  function saveProgress(
-    puzzleType: PuzzleType,
-    puzzleNumber: string | number,
-    progress: SavedPuzzleProgress[]
-  ): Promise<any> {
-    return localForage
-      .setItem(`${puzzleType}-${puzzleNumber}-forage`, progress)
-      .catch(() => {
-        toast.error("Error saving progress");
-      });
-  }
-
-  function loadProgress(
-    puzzleType: "pimantle" | "semantle",
-    puzzleNumber: string | number
-  ): Promise<SavedPuzzleProgress[] | undefined> {
-    return localForage
-      .getItem(`${puzzleType}-${puzzleNumber}-forage`)
-      .then((result) => {
-        if (result) {
-          return result as SavedPuzzleProgress[];
-        } else {
-          return undefined;
-        }
-      });
   }
 
   useEffect(() => {
@@ -519,203 +389,35 @@ function App() {
   }, []);
 
   useEffect(() => {
-    scroller.current?.scrollTo({
-      top: scroller.current?.scrollHeight,
-    });
-    hoverEnabled.current = false;
-    setTimeout(() => {
-      if (mostRecentGuess) {
-        // @ts-ignore
-        Plotly.Fx.hover("plot-div", [
-          {
-            curveNumber: 2,
-            pointNumber: Math.max((mostRecentGuess?.guessIndex || 0) - 1, 0),
-          },
-        ]);
-      }
-    }, 100); //stupid race condition?
-  }, [mostRecentGuess]);
-
-  useEffect(() => {
     setDataRevision((old) => old + 1);
   }, [plotData, plotLayout]);
 
-  function updateStats(stats: StatsUpdate | LesserStatsUpdate) {
-    if (stats.type == "greater") {
-      setStats({
-        totalGuesses: stats.total_guesses,
-        totalSolves: stats.total_solves,
-        totalSolveGuesses: stats.total_guesses_for_solves,
-        buckets: [],
-      });
-    } else {
-      setStats((old) => ({
-        ...old,
-        totalGuesses: stats.totalGuesses,
-      }));
-    }
-  }
-
-  function checkGuess(guess: string): Word | undefined {
-    return parsedWords.find((word) => word.word === guess);
-  }
-
-  function saveGuesses(newGuessList: Word[]) {
-    let savedState: SavedPuzzleProgress[] = newGuessList.map((word) => ({
-      word: word.word,
-      guessIndex: word.guessIndex ?? 0,
-      isHint: word.isHint ?? false,
-    }));
-
-    savedState.sort((a, b) => (a.guessIndex || 0) - (b.guessIndex || 0));
-
-    saveProgress(puzzleType, currentPuzzle, savedState);
-  }
-
-  function submitGuess(guess: FormEvent<HTMLFormElement>) {
-    guess.preventDefault();
-    let newGuess = guess.currentTarget.guess.value.toLowerCase().trim();
-    submitGuesses([{ word: newGuess, isHint: false }], false);
-    guess.currentTarget.guess.value = "";
-  }
-
-  function submitGuesses(guess: SubmitGuessesParams[], isAutomated: boolean) {
-    let isBulk = guess.length > 1;
-    let newGuessObjects: Word[] = guess
-      .map((guess) => {
-        let result = checkGuess(guess.word);
-        if (result === undefined) {
-          toast.error(`I don't know the word "${guess.word}".`);
-          inputBox.current?.animate(
-            [
-              { transform: "translateX(0px)" },
-              { transform: "translateX(10px)" },
-              { transform: "translateX(-10px)" },
-              { transform: "translateX(10px)" },
-              { transform: "translateX(-10px)" },
-              { transform: "translateX(10px)" },
-              { transform: "translateX(0px)" },
-            ],
-            {
-              duration: 500,
-            }
-          );
-        }
-        return (
-          result &&
-          ({
-            ...(result as Word),
-            guessIndex: guess.index,
-            isHint: guess.isHint,
-            isBulk: isBulk,
-          } as Word)
-        );
-      })
-      .filter(
-        (result: Word | undefined): result is Word => result !== undefined
-      )
-      .map((guess: Word, index: number) => {
-        let previousGuess = guesses.find(
-          (oldGuess) => oldGuess.word === guess.word
-        );
-        if (previousGuess) {
-          setMostRecentGuess(previousGuess);
-          centerPlot(previousGuess);
-          return undefined;
-        } else {
-          return {
-            ...(guess as Word),
-            guessIndex: guess.guessIndex || guesses.length + index + 1,
-          } as Word;
-        }
-      })
-      .filter(
-        (result: Word | undefined): result is Word => result !== undefined
+  function centerPlot(on?: Word) {
+    setBizarreEdgeCaseThingIHateIt((old) => old * -1);
+    if (parsedWords) {
+      let [xRange, yRange] = getAxisRange(
+        on ? on : parsedWords[Math.floor(parsedWords.length / 2)]
       );
 
-    let guessCount = guesses.length;
-    if (newGuessObjects.length > 0) {
-      guessCount += newGuessObjects.length;
-      setGuesses((old) => {
-        let newGuessList = [...old, ...newGuessObjects].sort(
-          (a, b) => b.rank - a.rank
-        );
-        saveGuesses(newGuessList);
-        return newGuessList;
-      });
+      xRange[0] += bizarreEdgeCaseThingIHateIt;
+      xRange[1] += bizarreEdgeCaseThingIHateIt;
+      yRange[0] += bizarreEdgeCaseThingIHateIt;
+      yRange[1] += bizarreEdgeCaseThingIHateIt;
 
-      let bestGuess = newGuessObjects[newGuessObjects.length - 1];
-      setMostRecentGuess(bestGuess);
-      centerPlot(bestGuess);
-
-      setPlotData((prevState) => [
-        prevState[0],
-        prevState[1],
-        {
-          ...prevState[2],
-          x: [...prevState[2].x, ...newGuessObjects.map((guess) => guess.x)],
-          y: [...prevState[2].y, ...newGuessObjects.map((guess) => guess.y)],
-          customdata: [
-            ...prevState[2].customdata,
-            ...newGuessObjects.map((guess) => [
-              guess.similarity.toFixed(2),
-              guess.rank,
-              guess.guessIndex,
-            ]),
-          ],
-          text: [
-            ...prevState[2].text,
-            ...newGuessObjects.map((guess) => guess.word),
-          ],
-          marker: {
-            ...prevState[2].marker,
-            color: [
-              ...prevState[2].marker.color,
-              ...newGuessObjects.map((guess) =>
-                guess.isHint ? "lime" : guess.rank
-              ),
-            ],
-          },
+      setPlotLayout((prevState: Plotly.Layout) => ({
+        ...prevState,
+        xaxis: {
+          ...prevState.xaxis,
+          range: xRange,
         },
-      ]);
-
-      let puzzleJustSolved = false;
-
-      if (newGuessObjects.some((guess) => guess.rank === 0)) {
-        const savePuzzleSolved = () => {
-          localStorage.setItem(
-            `${puzzleType}-${currentPuzzle}-solved`,
-            JSON.stringify(new Date().toISOString())
-          );
-        };
-        try {
-          if (navigator.storage && navigator.storage.persist) {
-            navigator.storage.persist().then(function () {
-              savePuzzleSolved();
-            });
-          } else {
-            savePuzzleSolved();
-          }
-        } catch (e) {
-          toast.error("Error saving puzzle progress");
-        }
-
-        setPuzzleSolved(true);
-        puzzleJustSolved = true;
-      }
-
-      if (!isAutomated && newGuessObjects.length) {
-        socketGuessHandler(
-          newGuessObjects[0].x,
-          newGuessObjects[0].y,
-          puzzleJustSolved
-            ? {
-                guessesUsed: guessCount,
-                hintsUsed: 0,
-              }
-            : undefined
-        );
-      }
+        yaxis: {
+          ...prevState.yaxis,
+          range: yRange,
+        },
+        uirevision: prevState.uirevision + 1,
+      }));
+      setDisplayedXRange(xRange);
+      setDisplayedYRange(yRange);
     }
   }
 
@@ -777,286 +479,6 @@ function App() {
     ];
   }
 
-  function centerPlot(on?: Word) {
-    setBizarreEdgeCaseThingIHateIt((old) => old * -1);
-    if (parsedWords) {
-      let [xRange, yRange] = getAxisRange(
-        on ? on : parsedWords[Math.floor(parsedWords.length / 2)]
-      );
-
-      xRange[0] += bizarreEdgeCaseThingIHateIt;
-      xRange[1] += bizarreEdgeCaseThingIHateIt;
-      yRange[0] += bizarreEdgeCaseThingIHateIt;
-      yRange[1] += bizarreEdgeCaseThingIHateIt;
-
-      setPlotLayout((prevState: Plotly.Layout) => ({
-        ...prevState,
-        xaxis: {
-          ...prevState.xaxis,
-          range: xRange,
-        },
-        yaxis: {
-          ...prevState.yaxis,
-          range: yRange,
-        },
-        uirevision: prevState.uirevision + 1,
-      }));
-      setDisplayedXRange(xRange);
-      setDisplayedYRange(yRange);
-    }
-  }
-
-  function onRelayout(newLayout: PlotRelayoutEvent) {
-    if (newLayout.autosize) {
-      return;
-    }
-    setDisplayedXRange((old) => [
-      newLayout?.["xaxis.range[0]"] ?? old[0],
-      newLayout?.["xaxis.range[1]"] ?? old[1],
-    ]);
-    setDisplayedYRange((old) => [
-      newLayout?.["yaxis.range[0]"] ?? old[0],
-      newLayout?.["yaxis.range[1]"] ?? old[1],
-    ]);
-  }
-
-  function generateImage(): Promise<string> {
-    if (socialImage !== "") {
-      return Promise.resolve(socialImage);
-    } else {
-      setDownloadingImage(true);
-      toast(
-        "Generating image, give me a sec... (this might not work great on some browsers)."
-      );
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(
-            Plotly.newPlot("hidden-plot", [plotData[0]], {
-              ...defaultLayout,
-              plot_bgcolor: "rgba(0,0,0,255)",
-            })
-              .then((figure: any) =>
-                Plotly.toImage(figure, {
-                  format: "png",
-                  width: 1920,
-                  height: 1080,
-                })
-              )
-              .then((bgLayer: string) =>
-                Plotly.react(
-                  "hidden-plot",
-                  [plotData[1], plotData[2]],
-                  defaultLayout
-                ).then((newPlot: any) =>
-                  Plotly.toImage(newPlot, {
-                    format: "png",
-                    width: 1920,
-                    height: 1080,
-                  }).then((foregroundLayer: string) => {
-                    Plotly.purge("hidden-plot");
-                    return mergeImages([bgLayer, foregroundLayer]).then(
-                      (merged) => {
-                        setSocialImage(merged);
-                        setDownloadingImage(false);
-                        return merged;
-                      }
-                    );
-                  })
-                )
-              )
-          );
-        }, 100);
-      });
-    }
-  }
-
-  function getHintCount() {
-    return guesses.filter((guess) => guess.isHint).length;
-  }
-
-  function getPuzzleName() {
-    let puzzleName = puzzleType == "semantle" ? "Semantle" : "Pimantle";
-    return `${puzzleName} #${currentPuzzle}`;
-  }
-
-  function getSolvedText() {
-    let hintCount = getHintCount();
-    let hintText = "";
-    if (hintCount == 0) {
-      hintText = "no hints";
-    } else if (hintCount == 1) {
-      hintText = "1 hint";
-    } else {
-      hintText = `${hintCount} hints`;
-    }
-
-    let extraText = puzzleType == "semantle" ? "(on Pimantle) " : "";
-    return `solved ${getPuzzleName()} ${extraText}with ${guesses.length} ${
-      guesses.length > 1 ? "guesses" : "guess"
-    } and ${hintText}!`;
-  }
-
-  function getShareString() {
-    return `I ${getSolvedText()}`;
-  }
-
-  function getImageBlob() {
-    return generateImage()
-      .then((image: string) => fetch(image))
-      .then((response: Response) => response.blob());
-  }
-
-  function shareVictory(withImage: boolean) {
-    let shareObject = {
-      url: window.location.href,
-      text: getShareString(),
-    };
-    let errorMessage =
-      'Sorry, we couldn\'t share. Try using the "Copy" buttons instead, maybe?';
-
-    if (withImage) {
-      getImageBlob().then((blob: Blob) => {
-        let file = new File([blob], `${puzzleType}-${currentPuzzle}.png`, {
-          type: blob.type,
-        });
-        if (navigator.canShare({ files: [file] })) {
-          console.log("it supports image");
-          navigator.share({
-            ...shareObject,
-            files: [file],
-          });
-        } else {
-          navigator.share(shareObject).catch((err) => {
-            toast.error(errorMessage);
-          });
-        }
-      });
-    } else {
-      navigator.share(shareObject).catch((err) => {
-        toast.error(errorMessage);
-      });
-    }
-  }
-
-  function copyVictory(withImage: boolean) {
-    if (navigator.clipboard === undefined) {
-      toast.error("Sorry, your browser doesn't support copying to clipboard.");
-    }
-    let shareText = getShareString() + "\n\n" + window.location.href;
-    let textBlob = new Blob([shareText], { type: "text/plain" });
-    if (withImage) {
-      getImageBlob().then((iamgeBlob) => {
-        navigator.clipboard
-          .write([
-            new ClipboardItem({
-              [iamgeBlob.type]: iamgeBlob,
-              [textBlob.type]: textBlob,
-            }),
-          ])
-          .then(() => {
-            toast.success("Copied to clipboard!");
-          })
-          .catch(() => {
-            toast.error(
-              'Sorry, we weren\'t able to copy to clipboard. Try using "Copy (text)" instead?'
-            );
-          });
-      });
-    } else {
-      (navigator.clipboard.write
-        ? navigator.clipboard.write([
-            new ClipboardItem({
-              [textBlob.type]: textBlob,
-            }),
-          ])
-        : navigator.clipboard.writeText(shareText)
-      )
-        .then(() => {
-          toast.success("Copied to clipboard!");
-        })
-        .catch(() => {
-          toast.error("Sorry, we weren't able to copy to clipboard.");
-        });
-    }
-  }
-
-  function explore() {
-    setExploreMode(true);
-    setPlotData((oldData) => [
-      {
-        ...oldData[0],
-        hovertemplate:
-          "<b>%{text}</b><br><br>Similarity: %{customdata[0]}<br>Rank: %{customdata[1]}<extra></extra>",
-      },
-      oldData[1],
-      oldData[2],
-    ]);
-    toast.warn(
-      "Explore mode enabled. You can now hover/tap on all nodes to see their similarity.\n\nWARNING: There are offensive words in the dataset, including slurs.",
-      {
-        autoClose: false,
-        position: "top-center",
-      }
-    );
-  }
-
-  function downloadVictory() {
-    getImageBlob().then((blob) => {
-      saveAs(blob, `${puzzleType}-${currentPuzzle}.png`);
-    });
-  }
-
-  function getHint() {
-    let firstHintIndex = guesses.length - 1;
-    while (
-      firstHintIndex > 0 &&
-      guesses[firstHintIndex - 1].rank == guesses[firstHintIndex].rank + 1
-    ) {
-      firstHintIndex--;
-    }
-    let lowerHintRange = guesses[firstHintIndex].rank;
-    let hintGoal = lowerHintRange;
-    if (firstHintIndex != 0) {
-      hintGoal = Math.floor(
-        (lowerHintRange + guesses[firstHintIndex - 1].rank) / 2
-      );
-    }
-
-    submitHint(hintGoal);
-  }
-
-  function getGoodHint() {
-    let bestGuess = guesses[guesses.length - 1];
-    if (bestGuess.rank == 1) {
-      toast.error("Sorry, you've already got the best hint!");
-      return;
-    }
-
-    let hintGoal = Math.ceil(bestGuess.rank / 2);
-    submitHint(hintGoal);
-  }
-
-  function submitHint(hintGoal: number) {
-    let hintWord = parsedWords.find((word) => word.rank == hintGoal);
-    if (hintWord) {
-      submitGuesses(
-        [
-          {
-            word: hintWord.word,
-            isHint: true,
-          },
-        ],
-        true
-      );
-    } else {
-      toast.error("Sorry, we couldn't find a hint (somehow...).");
-    }
-  }
-
-  function getGuessCount() {
-    return guesses.length;
-  }
-
   return (
     <div className="App">
       <ToastContainer
@@ -1074,41 +496,11 @@ function App() {
         />
       )}
       <div className="header">
-        <div className="server-panel">
-          {socketState === "connected" && (
-            <>
-              <span
-                className="player-count"
-                title="Players online solving this puzzle"
-              >
-                👤{playersOnline}
-              </span>
-              <input
-                type="button"
-                className="disconnect-button"
-                value="Disconnect"
-                onClick={socketDisconnectCallback}
-              />
-            </>
-          )}
-          {socketState === "connecting" && (
-            <span className="reconnecting">Connecting...</span>
-          )}
-
-          {socketState === "closed" && (
-            <input
-              type="button"
-              className="disconnect-button"
-              value="Reconnect"
-              onClick={() => {
-                localStorage.removeItem("pimantle-offline");
-                setTimeout(() => {
-                  window.location.reload();
-                }, 150);
-              }}
-            />
-          )}
-        </div>
+        <ServerPanel
+          socketState={socketState}
+          playersOnline={playersOnline}
+          socketDisconnectCallback={socketDisconnectCallback}
+        />
         <span
           className="header-link"
           onClick={() => setArchiveOpen(true)}
@@ -1140,136 +532,36 @@ function App() {
       {parsedWords.length > 0 && (
         <div className="game-container">
           <div className="layout-container">
-            <div className="guess-container">
-              <div className="guess-list" ref={scroller}>
-                {mostRecentGuess && (
-                  <>
-                    {puzzleSolved || (
-                      <div>
-                        <hr />
-                        <GuessEntry guess={mostRecentGuess} />
-                      </div>
-                    )}
-                    {[...guesses].reverse().map((guess) => (
-                      <GuessEntry
-                        guess={guess}
-                        animated={true}
-                        key={`first-guess-${guess.word}`}
-                      />
-                    ))}
-                  </>
-                )}
-
-                {socketState === "connected" && (
-                  <StatsPanel puzzleName={getPuzzleName()} stats={stats} />
-                )}
-
-                <WelcomePanel isArchivePuzzle={isArchivePuzzle} />
-              </div>
-
-              {puzzleSolved || (
-                <form
-                  onSubmit={submitGuess}
-                  className="guess-form"
-                  ref={inputBox}
-                >
-                  <input
-                    type="text"
-                    placeholder="Enter a guess"
-                    id="guess"
-                    className="guess-input"
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    autoFocus={true}
-                  />
-                  <input type="submit" value="Guess" className="guess-submit" />
-                  {guesses.length > 10 && (
-                    <input
-                      type="button"
-                      value="Hint"
-                      className="hint-button"
-                      onClick={getHint}
-                    />
-                  )}
-                  {guesses.filter((g) => g.isHint).length > 6 &&
-                    !guesses.some((guess) => guess.rank === 1) && (
-                      <input
-                        type="button"
-                        value="Good hint"
-                        className="give-up-button"
-                        onClick={getGoodHint}
-                      />
-                    )}
-                </form>
-              )}
-
-              {puzzleSolved && (
-                <div className="solved-container">
-                  <div className="congrats-text">
-                    You did it! You {getSolvedText()} The secret word was{" "}
-                    <b>{secret?.word}</b>. New puzzle in{" "}
-                    <Countdown date={nextPuzzleTime} daysInHours={true} />.
-                  </div>
-                  <div className="reward-buttons">
-                    {typeof navigator.canShare !== "undefined" &&
-                      navigator.canShare({ text: "test" }) && (
-                        <div>
-                          <input
-                            onClick={() => shareVictory(false)}
-                            type="button"
-                            value="Share (text)"
-                          />
-                          <input
-                            onClick={() => shareVictory(true)}
-                            disabled={downloadingImage}
-                            type="button"
-                            value="Share (text+image)"
-                          />
-                        </div>
-                      )}
-
-                    <input
-                      onClick={() => copyVictory(false)}
-                      type="button"
-                      value="Copy (text)"
-                    />
-                    <input
-                      onClick={() => copyVictory(true)}
-                      type="button"
-                      value="Copy (image)"
-                    />
-                    <input
-                      onClick={() => downloadVictory()}
-                      disabled={downloadingImage}
-                      type="button"
-                      value="Download"
-                    />
-                    {exploreMode || (
-                      <input
-                        onClick={() => explore()}
-                        type="button"
-                        value="Explore"
-                      />
-                    )}
-                  </div>
-                  {downloadingImage && (
-                    <div className="downloading">
-                      Just a sec, generating image...
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <Guesses
+              guesses={guesses}
+              setGuesses={setGuesses}
+              parsedWords={parsedWords}
+              puzzleType={puzzleType}
+              currentPuzzle={currentPuzzle}
+              stats={stats}
+              socketState={socketState}
+              socketGuessHandler={socketGuessHandler}
+              scroller={scroller}
+              hoverEnabled={hoverEnabled}
+              plotData={plotData}
+              setPlotData={setPlotData}
+              isArchivePuzzle={isArchivePuzzle}
+              defaultLayout={defaultLayout}
+              secret={secret}
+              nextPuzzleTime={nextPuzzleTime}
+              centerPlot={centerPlot}
+            />
             <div className="safe-container" />
           </div>
 
           <PlotContainer
-            data={plotData}
-            layout={plotLayout}
-            onInit={() => centerPlot()}
-            hoverEnabled={hoverEnabled}
+            plotProperties={{ plotData, hoverEnabled }}
+            parsedWords={parsedWords}
+            plotLayout={plotLayout}
             revision={dataRevision}
-            onRelayout={onRelayout}
+            setDisplayedXRange={setDisplayedXRange}
+            setDisplayedYRange={setDisplayedYRange}
+            onInit={() => centerPlot}
           />
         </div>
       )}
@@ -1286,3 +578,6 @@ function App() {
 }
 
 export default App;
+function copyVictory(arg0: boolean): void {
+  throw new Error("Function not implemented.");
+}

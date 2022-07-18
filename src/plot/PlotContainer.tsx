@@ -1,24 +1,40 @@
 import Plot from "react-plotly.js";
-import React, { MutableRefObject } from "react";
-import { PlotRelayoutEvent } from "plotly.js";
-
-export type PlotProperties = {
-  data: any;
-  layout: any;
-  onInit: () => void;
-  hoverEnabled: MutableRefObject<boolean>;
-  revision: number;
-  onRelayout: (event: PlotRelayoutEvent) => void;
-};
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { PlotProperties } from "./plot.model";
+import { PlotRelayoutEvent } from "plotly.js-dist-min";
+import { Word } from "../guesses/guesses.model";
 
 function DumbPlotContainer({
-  data,
-  layout,
-  onInit,
-  hoverEnabled,
+  plotProperties,
+  plotLayout,
   revision,
-  onRelayout,
-}: PlotProperties) {
+  setDisplayedXRange,
+  setDisplayedYRange,
+  onInit,
+}: {
+  plotProperties: PlotProperties;
+  parsedWords: Word[];
+  plotLayout: Plotly.Layout;
+  revision: number;
+  setDisplayedXRange: Dispatch<SetStateAction<number[]>>;
+  setDisplayedYRange: Dispatch<SetStateAction<number[]>>;
+  onInit: () => void;
+}) {
+  function onRelayout(newLayout: PlotRelayoutEvent) {
+    if (newLayout.autosize) {
+      return;
+    }
+    console.log("RELAYOUT");
+    setDisplayedXRange((old) => [
+      newLayout?.["xaxis.range[0]"] ?? old[0],
+      newLayout?.["xaxis.range[1]"] ?? old[1],
+    ]);
+    setDisplayedYRange((old) => [
+      newLayout?.["yaxis.range[0]"] ?? old[0],
+      newLayout?.["yaxis.range[1]"] ?? old[1],
+    ]);
+  }
+
   return (
     <div
       className="bg-plot-container"
@@ -29,8 +45,8 @@ function DumbPlotContainer({
     >
       <Plot
         className="plot"
-        data={data}
-        layout={layout}
+        data={plotProperties.plotData}
+        layout={plotLayout}
         config={{
           scrollZoom: true,
           doubleClick: false,
@@ -47,7 +63,7 @@ function DumbPlotContainer({
           displayModeBar: true,
         }}
         onInitialized={onInit}
-        onBeforeHover={(event) => hoverEnabled?.current}
+        onBeforeHover={(event) => plotProperties.hoverEnabled?.current}
         // onUpdate={(figure) => {
         //   console.log("i'm in on-update!", figure);
         //   // setPlotState(figure);
