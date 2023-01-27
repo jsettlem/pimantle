@@ -69,6 +69,7 @@ function Guesses({
     undefined
   );
   let [puzzleSolved, setPuzzleSolved] = useState<boolean>(false);
+  let [displayByGuessIndex, setDisplayByGuessIndex] = useState<boolean>(false);
   const inputBox = useRef<HTMLFormElement>(null);
 
   function saveGuesses(newGuessList: Word[]) {
@@ -302,6 +303,18 @@ function Guesses({
     });
   }
 
+  function toggleSortOrder() {
+    setDisplayByGuessIndex(!displayByGuessIndex);
+  }
+
+  function sortFunction() {
+    if (displayByGuessIndex) {
+      return (a: Word, b: Word) => (b.guessIndex || 0) - (a.guessIndex || 0);
+    } else {
+      return (a: Word, b: Word) => (a.rank - b.rank);
+    }
+  }
+
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousedown", enableHover);
@@ -353,13 +366,32 @@ function Guesses({
       <div className="guess-list" ref={scroller}>
         {mostRecentGuess && (
           <>
+            {
+              <>
+              <div className={`guess-setting bg-frigid`}>
+              Sort guesses chronologically
+              <input 
+                id="switch"
+                type="checkbox"
+                checked={displayByGuessIndex}
+                onClick={toggleSortOrder}
+              />
+              <label
+                className="switch-label"
+                htmlFor="switch"
+              >
+              <span className="switch-button" />
+              </label>
+              </div>
+              </>
+            }
             {puzzleSolved || (
               <div>
                 <hr />
                 <GuessEntry guess={mostRecentGuess} />
               </div>
             )}
-            {[...guesses].reverse().map((guess) => (
+            {[...guesses].sort(sortFunction()).map((guess) => (
               <GuessEntry
                 guess={guess}
                 animated={true}
