@@ -202,6 +202,52 @@ input[type="submit"] {
   height: 3rem;
 }
 
+input[type="checkbox"] {
+  height: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+.switch-label {
+  position: relative;
+  width: 2rem;
+  height: 1.2rem;
+  background: rgba(14, 26, 33, 0.77);
+  border-radius: 2rem;
+  border-width: 0.1rem;
+  border-style: solid;
+  transition: background-color .4s;
+}
+
+.switch-label .switch-button {
+  content: "";
+  position: absolute;
+  top: 0.1rem;
+  left: 0.1rem;
+  width: 1rem;
+  height: 1rem;
+  background: #ececec;
+  border-radius: 1rem;
+  transition: .4s;
+}
+
+input:checked + .switch-label {
+  background: rgba(222, 234, 248, 0.6);
+}
+
+input:checked + .switch-label .switch-button {
+  left: calc(100% - 0.1rem);
+  transform: translateX(-100%);
+}
+
+.guess-setting {
+  display: flex;
+  flex-direction: row;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+}
+
 .guess-input {
   height: 2rem;
   width: 15rem;
