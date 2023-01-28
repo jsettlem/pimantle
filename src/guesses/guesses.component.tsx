@@ -311,7 +311,7 @@ function Guesses({
     if (displayByGuessIndex) {
       return (a: Word, b: Word) => (b.guessIndex || 0) - (a.guessIndex || 0);
     } else {
-      return (a: Word, b: Word) => (a.rank - b.rank);
+      return (a: Word, b: Word) => a.rank - b.rank;
     }
   }
 
@@ -366,25 +366,6 @@ function Guesses({
       <div className="guess-list" ref={scroller}>
         {mostRecentGuess && (
           <>
-            {
-              <>
-              <div className={`guess-setting bg-frigid`}>
-              Sort guesses chronologically
-              <input 
-                id="switch"
-                type="checkbox"
-                checked={displayByGuessIndex}
-                onClick={toggleSortOrder}
-              />
-              <label
-                className="switch-label"
-                htmlFor="switch"
-              >
-              <span className="switch-button" />
-              </label>
-              </div>
-              </>
-            }
             {puzzleSolved || (
               <div>
                 <hr />
@@ -400,6 +381,23 @@ function Guesses({
             ))}
           </>
         )}
+
+        {
+          <>
+            <div className={`guess-setting bg-frigid`}>
+              <label htmlFor="toggleSort">Sort guesses chronologically</label>
+              <input
+                id="toggleSort"
+                type="checkbox"
+                checked={displayByGuessIndex}
+                onClick={toggleSortOrder}
+              />
+              <label className="switch-label" htmlFor="toggleSort">
+                <span className="switch-button" />
+              </label>
+            </div>
+          </>
+        }
 
         {socketState === "connected" && (
           <StatsPanel
