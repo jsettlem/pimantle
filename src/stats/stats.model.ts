@@ -1,6 +1,6 @@
 export type StatsStatus = {
-    totalGuesses: number;
-    totalSolves: number;
-    totalSolveGuesses: number;
-    buckets: [];
+  totalGuesses: number;
+  totalSolves: number;
+  totalSolveGuesses: number;
+  buckets: number[];
 };

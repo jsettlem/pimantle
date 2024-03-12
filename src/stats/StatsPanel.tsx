@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { StatsStatus } from "./stats.model";
+import Plot from "react-plotly.js";
 
 function StatsPanel({
   puzzleName,
@@ -15,7 +16,9 @@ function StatsPanel({
   }, [stats]);
 
   return (
-    <div className={`guess-entry stats-box bg-tepid ${pinned ? "sticky" : ""}`}>
+    <div
+      className={`guess-entry stats-box bg-frigid ${pinned ? "sticky" : ""}`}
+    >
       <p>
         <b>{puzzleName} stats</b>
         {/*<input*/}
@@ -44,9 +47,93 @@ function StatsPanel({
           </tr>
         </tbody>
       </table>
-      <p>
-        <i>(more stats coming soon)</i>
-      </p>
+      <Plot
+        data={[
+          {
+            type: "histogram",
+            x: [
+              0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260,
+              280, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500,
+            ],
+            y: stats.buckets,
+            customdata: [1, 2, 3, 4, 5],
+            histfunc: "sum",
+            xbins: {
+              start: 0,
+              end: 500,
+              size: 20,
+            },
+            marker: {
+              color: "darkblue",
+            },
+            hoverlabel: {
+              font: {
+                family: "var(--body-font)",
+              },
+            },
+            hovertemplate:
+              "<b>%{x}+ guesses, %{y} player(s)</b><extra></extra>",
+          },
+        ]}
+        layout={{
+          dragmode: false,
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+          margin: {
+            l: 0,
+            r: 0,
+            b: 0,
+            t: 0,
+            pad: 0,
+          },
+
+          width: 400,
+          height: 200,
+          xaxis: {
+            range: [0, 500],
+          },
+          yaxis: {
+            showticklabels: false,
+          },
+          shapes: [
+            {
+              type: "line",
+              name: "Par",
+              x0:
+                stats.totalSolves === 0
+                  ? 0
+                  : stats.totalSolveGuesses / stats.totalSolves,
+              x1:
+                stats.totalSolves === 0
+                  ? 0
+                  : stats.totalSolveGuesses / stats.totalSolves,
+              y0: 0,
+              y1: 1,
+              yref: "paper",
+              fillcolor: "#ffff00",
+              line: {
+                color: "#ffff00",
+                width: 2,
+              },
+            },
+          ],
+        }}
+        config={{
+          modeBarButtonsToRemove: [
+            "zoomIn2d",
+            "zoomOut2d",
+            "zoom2d",
+            "pan2d",
+            "select2d",
+            "lasso2d",
+            "autoScale2d",
+            "resetScale2d",
+            "toImage",
+          ],
+          displaylogo: false,
+          displayModeBar: true,
+        }}
+      />
     </div>
   );
 }
