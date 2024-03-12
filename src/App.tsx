@@ -147,15 +147,17 @@ function App() {
       await migrateLocalStorage();
 
       for (let i = todaysSemantle - 1; i >= 0; i--) {
-        let semantleProgress = await loadProgress("semantle", i);
-        let semantleSolved = localStorage.getItem(`semantle-${i}-solved`);
-        semantleArchive.push({
-          puzzleType: "semantle",
-          puzzleIndex: i,
-          started: !!semantleProgress,
-          solved: !!semantleSolved,
-          guesses: (semantleProgress && semantleProgress.length) ?? 0,
-        });
+        if (i <= 399) {
+          let semantleProgress = await loadProgress("semantle", i);
+          let semantleSolved = localStorage.getItem(`semantle-${i}-solved`);
+          semantleArchive.push({
+            puzzleType: "semantle",
+            puzzleIndex: i,
+            started: !!semantleProgress,
+            solved: !!semantleSolved,
+            guesses: (semantleProgress && semantleProgress.length) ?? 0,
+          });
+        }
 
         if (i < todaysPimantle) {
           let pimantleProgress = await loadProgress("pimantle", i);
@@ -210,7 +212,7 @@ function App() {
         .fetch(
           `/${
             puzzleType == "pimantle" ? "secret_words" : "semantle_words"
-          }/secret_word_${newPuzzleNumber}.bin?2`,
+          }/secret_word_${newPuzzleNumber}.bin?3`,
           {
             cache: "force-cache",
           }
