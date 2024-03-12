@@ -72,7 +72,7 @@ function StatsPanel({
               },
             },
             hovertemplate:
-              "<b>%{x}+ guesses, %{y} player(s)</b><extra></extra>",
+              "<b>%{x}+ guesses, %{y} solver(s)</b><extra></extra>",
           },
         ]}
         layout={{
@@ -88,7 +88,7 @@ function StatsPanel({
           },
 
           width: 400,
-          height: 200,
+          height: 150,
           xaxis: {
             range: [0, 500],
           },
