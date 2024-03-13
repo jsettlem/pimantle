@@ -65,6 +65,10 @@ function StatsPanel({
             },
             marker: {
               color: "darkblue",
+              line: {
+                color: "#ffffff90",
+                width: 1,
+              },
             },
             hoverlabel: {
               font: {
@@ -90,10 +94,11 @@ function StatsPanel({
           width: 400,
           height: 150,
           xaxis: {
-            range: [0, 500],
+            range: [-1, 501],
           },
           yaxis: {
             showticklabels: false,
+            showgrid: false,
           },
           shapes: [
             {
