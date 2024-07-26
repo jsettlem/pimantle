@@ -219,10 +219,12 @@ function Solved({
 
   return (
     <div className="solved-container">
-      <div className="congrats-text">
-        You did it! You {getSolvedText()} The secret word was{" "}
-        <b>{secret?.word}</b>. New puzzle in{" "}
-        <Countdown date={nextPuzzleTime} daysInHours={true} />.
+      <div className="congrats-text guess-entry bg-correct">
+        <span>
+          You did it! You {getSolvedText()} The secret word was{" "}
+          <b>{secret?.word}</b>. New puzzle in{" "}
+          <Countdown date={nextPuzzleTime} daysInHours={true} />.
+        </span>
       </div>
       <div className="reward-buttons">
         {typeof navigator.canShare !== "undefined" &&

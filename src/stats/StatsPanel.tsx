@@ -32,7 +32,7 @@ function StatsPanel({
           <tr>
             <th>Guesses</th>
             <th>Solves</th>
-            <th>Avg. guesses/solve</th>
+            <th>Avg. guesses</th>
           </tr>
         </thead>
         <tbody>
@@ -66,7 +66,7 @@ function StatsPanel({
             marker: {
               color: "darkblue",
               line: {
-                color: "#ffffff90",
+                color: "#ffffff50",
                 width: 1,
               },
             },
